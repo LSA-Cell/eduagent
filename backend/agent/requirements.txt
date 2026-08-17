@@ -1,0 +1,15 @@
+# EduAgent Agent 编排服务运行时依赖
+# 注意：eduagent_shared 为本地包，部署时先执行 `pip install -e ./shared`（见 Dockerfile）
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.29
+celery[redis]>=5.4,<6.0
+redis>=5.0
+SQLAlchemy[asyncio]>=2.0,<3.0
+asyncpg>=0.29
+pgvector>=0.2.5
+httpx>=0.27,<1.0
+minio>=7.2,<8.0
+pydantic>=2.6,<3.0
+pydantic-settings>=2.2
+PyYAML>=6.0,<7.0
+sympy>=1.12

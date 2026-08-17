@@ -1,0 +1,447 @@
+# ============================================================================
+# EduAgent 基础设施编排
+# 技术栈：PostgreSQL 15 + pgvector / Redis 7 / MinIO / vLLM / FastAPI 微服务 / Nginx
+#
+# 网络隔离（硬性约束）：
+#   net_edge      边缘层：nginx、bff（数据层/推理层一律不接入）
+#   net_app       应用层：bff / gateway / agent(+worker) / multimodal / proxy / docgen
+#   net_data      数据层：postgres / redis / minio / createbuckets（internal，无出站）
+#   net_inference 推理层：gateway / proxy / vllm-*（vllm 仅对推理层暴露）
+#
+# vLLM 服务位于 gpu profile：`docker compose --profile gpu up -d` 才会启动。
+# ============================================================================
+
+name: eduagent
+
+services:
+
+  # --------------------------------------------------------------------------
+  # 数据层
+  # --------------------------------------------------------------------------
+
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: eduagent-postgres
+    restart: unless-stopped
+    env_file:
+      - .env                       # POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
+    ports:
+      - "5432:5432"
+    volumes:
+      # 完整 DDL + pgvector + 索引 + RLS，仅首次启动（数据卷为空）时执行
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-eduagent} -d $${POSTGRES_DB:-eduagent}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - net_data
+
+  redis:
+    image: redis:7-alpine
+    container_name: eduagent-redis
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - net_data
+
+  minio:
+    image: minio/minio:latest
+    container_name: eduagent-minio
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-eduagent_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-change_me_minio}
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports:
+      - "9000:9000"                # S3 API
+      - "9001:9001"                # 控制台
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - net_data
+
+  # 初始化私有桶：eduagent-uploads / eduagent-generated / eduagent-templates
+  createbuckets:
+    image: minio/mc:latest
+    container_name: eduagent-createbuckets
+    env_file:
+      - .env                       # MINIO_ACCESS_KEY / MINIO_SECRET_KEY / MINIO_BUCKET_*
+    depends_on:
+      minio:
+        condition: service_healthy
+    # 列表形式 entrypoint：避免 YAML `>` 折叠标量中更深缩进的桶名行被保留换行，
+    # 导致 `&&` 出现在行首触发 sh 语法错误
+    entrypoint:
+      - /bin/sh
+      - -c
+      - "mc alias set local http://minio:9000 \"$${MINIO_ACCESS_KEY}\" \"$${MINIO_SECRET_KEY}\"
+         && mc mb --ignore-existing
+              local/$${MINIO_BUCKET_UPLOADS:-eduagent-uploads}
+              local/$${MINIO_BUCKET_GENERATED:-eduagent-generated}
+              local/$${MINIO_BUCKET_TEMPLATES:-eduagent-templates}
+         && mc anonymous set none local/$${MINIO_BUCKET_UPLOADS:-eduagent-uploads}
+         && mc anonymous set none local/$${MINIO_BUCKET_GENERATED:-eduagent-generated}
+         && mc anonymous set none local/$${MINIO_BUCKET_TEMPLATES:-eduagent-templates}
+         && echo 'buckets ready (private)'"
+    restart: "no"
+    networks:
+      - net_data
+
+  # --------------------------------------------------------------------------
+  # 应用层（镜像 Dockerfile 由后端各服务负责人在 backend/ 下提供）
+  # --------------------------------------------------------------------------
+
+  bff:
+    image: eduagent/bff:dev
+    container_name: eduagent-bff
+    build:
+      context: ./backend
+      dockerfile: bff/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      createbuckets:
+        condition: service_completed_successfully
+      gateway:
+        condition: service_healthy
+      agent:
+        condition: service_healthy
+      multimodal:
+        condition: service_healthy
+      proxy:
+        condition: service_healthy
+      docgen:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - net_edge                   # 唯一面向 nginx 的应用服务
+      - net_app
+      - net_data
+
+  gateway:
+    image: eduagent/gateway:dev
+    container_name: eduagent-gateway
+    build:
+      context: ./backend
+      dockerfile: gateway/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8001:8001"
+    depends_on:
+      # gpu profile 未启用时跳过（required: false，Compose >= 2.20）；
+      # 启用时等待 vLLM 加载完模型并健康
+      vllm-general:
+        condition: service_healthy
+        required: false
+      vllm-math:
+        condition: service_healthy
+        required: false
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=5)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - net_app
+      - net_inference              # 唯一可访问 vLLM 的应用服务（除 proxy 外）
+
+  agent:
+    image: eduagent/agent:dev
+    container_name: eduagent-agent
+    build:
+      context: ./backend
+      dockerfile: agent/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      createbuckets:
+        condition: service_completed_successfully
+      gateway:
+        condition: service_healthy
+      multimodal:
+        condition: service_healthy
+      docgen:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8002/health', timeout=5)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - net_app
+      - net_data
+
+  # 与 agent 同镜像的 Celery worker：跑异步长任务（内容生成/错题提取/复习调度）
+  agent-worker:
+    image: eduagent/agent:dev
+    container_name: eduagent-agent-worker
+    build:
+      context: ./backend
+      dockerfile: agent/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    # 入口以 backend/agent 的实际 Celery app 模块为准，必要时调整 -A 参数
+    command: ["celery", "-A", "agent.worker", "worker",
+              "--loglevel=INFO", "--concurrency=4"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      createbuckets:
+        condition: service_completed_successfully
+    networks:
+      - net_app
+      - net_data
+
+  multimodal:
+    image: eduagent/multimodal:dev
+    container_name: eduagent-multimodal
+    build:
+      context: ./backend
+      dockerfile: multimodal/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8003:8003"
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8003/health', timeout=5)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - net_app
+
+  proxy:
+    image: eduagent/proxy:dev
+    container_name: eduagent-proxy
+    build:
+      context: ./backend
+      dockerfile: proxy/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8004:8004"
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8004/health', timeout=5)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - net_app
+      - net_inference              # 作为外部推理出口，与 vLLM 同层隔离
+
+  docgen:
+    image: eduagent/docgen:dev
+    container_name: eduagent-docgen
+    build:
+      context: ./backend
+      dockerfile: docgen/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8005:8005"
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      createbuckets:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8005/health', timeout=5)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - net_app
+      - net_data                   # 生成文件直接写入 MinIO
+
+  # --------------------------------------------------------------------------
+  # 推理层（vLLM，需 NVIDIA GPU；默认不启动，使用 --profile gpu 开启）
+  # --------------------------------------------------------------------------
+
+  vllm-general:
+    image: vllm/vllm-openai:latest
+    container_name: eduagent-vllm-general
+    profiles: ["gpu"]
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: >
+      --model ${VLLM_GENERAL_MODEL:-/models/edu-general-14b}
+      --served-model-name edu-general-14b
+      --port 8100
+      --max-model-len 8192
+      --gpu-memory-utilization 0.85
+    ports:
+      - "8100:8100"
+    volumes:
+      # 本地模型权重目录（只读挂载）；HuggingFace 缓存用命名卷避免重复下载
+      - ${VLLM_MODELS_DIR:-./infra/models}:/models:ro
+      - vllm_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8100/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 600s           # 模型加载耗时长，宽限 10 分钟
+    networks:
+      - net_inference              # 仅 gateway/proxy 可达
+
+  vllm-math:
+    image: vllm/vllm-openai:latest
+    container_name: eduagent-vllm-math
+    profiles: ["gpu"]
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: >
+      --model ${VLLM_MATH_MODEL:-/models/edu-math-7b}
+      --served-model-name edu-math-7b
+      --port 8101
+      --max-model-len 8192
+      --gpu-memory-utilization 0.85
+    ports:
+      - "8101:8101"
+    volumes:
+      - ${VLLM_MODELS_DIR:-./infra/models}:/models:ro
+      - vllm_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8101/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 600s
+    networks:
+      - net_inference
+
+  # --------------------------------------------------------------------------
+  # 边缘层
+  # --------------------------------------------------------------------------
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: eduagent-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/eduagent_locations.conf:/etc/nginx/conf.d/eduagent_locations.conf:ro
+      - ./infra/nginx/certs:/etc/nginx/certs:ro   # 证书占位目录（见 nginx.conf 注释）
+    depends_on:
+      bff:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - net_edge                   # 只能到达 bff，永远接触不到数据层/推理层
+
+# ============================================================================
+# 网络与数据卷
+# ============================================================================
+
+networks:
+  net_edge:
+    driver: bridge
+  net_app:
+    driver: bridge
+  net_data:
+    driver: bridge
+    internal: true                 # 数据层无出站：postgres/redis/minio 无法访问外网
+  net_inference:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  vllm_cache:

@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+mobile/android/.gradle/
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+
+# Env & secrets
+.env
+*.pem
+*.key
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Data volumes
+infra/data/

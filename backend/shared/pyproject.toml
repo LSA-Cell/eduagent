@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eduagent_shared"
+version = "0.1.0"
+description = "EduAgent 后端公共库：配置 / DB / Redis / 加密 / JWT / ORM 模型 / 日志"
+requires-python = ">=3.11"
+dependencies = [
+    "sqlalchemy[asyncio]>=2.0,<3.0",
+    "asyncpg>=0.29,<1.0",
+    "redis>=5.0,<8.0",
+    "pydantic>=2.6,<3.0",
+    "pydantic-settings>=2.2,<3.0",
+    "httpx>=0.27,<1.0",
+    "PyJWT>=2.8,<3.0",
+    # cryptography>=46 的官方 aarch64 wheel 在 Apple M4 的 Docker Desktop Linux VM 中
+    # 触发 SIGILL(非法指令,实测 50.0.0 全 variant 复现,45.0.7 正常),上限锁到 <46
+    "cryptography>=42.0,<46.0",
+    "structlog>=24.1",
+    "pgvector>=0.3.6",
+]
+
+[tool.setuptools.packages.find]
+include = ["eduagent_shared*"]

@@ -1,0 +1,203 @@
+# ============================================================================
+# EduAgent 内置 Skill 注册表（设计文档 §3.7）：Flutter 工具栏 16 工具 = 16 条记录
+# 字段：code / name / icon / roles[] / prompt_template / input_form_schema /
+#       card_type / sort_order / is_active
+# 红线：提示词模板只允许注册表化（本文件 + skill_definitions 表），禁止硬编码进 .py；
+#       身份过滤在服务端完成（loader.toolbar_for_role）。
+# Skill 只是"结构化入口"：prompt_template + 表单参数组装成用户消息进入 Agent Loop。
+# prompt_template 中 {params} 为表单参数 JSON 占位符（可选）。
+# ============================================================================
+
+- code: photo_solve
+  name: 拍照答疑
+  icon: 📷
+  roles: [student, parent]
+  prompt_template: 请解答这张图片中的题目。先 OCR 识别题目内容，再分步讲解解题思路，最后给出答案与易错点提醒。{params}
+  input_form_schema:
+    - {field: image_url, type: image, required: true, label: 题目照片}
+    - {field: subject, type: select, required: false, label: 学科}
+  card_type: null
+  sort_order: 1
+  is_active: true
+
+- code: grading
+  name: 作业批改
+  icon: ✅
+  roles: [student, parent]
+  prompt_template: 请批改这份作业：逐题判断对错，圈出错误并给出正确答案，归因到知识点，把典型错题记录到错题本。{params}
+  input_form_schema:
+    - {field: image_url, type: image, required: true, label: 作业照片}
+    - {field: subject, type: select, required: true, label: 学科}
+  card_type: grading
+  sort_order: 2
+  is_active: true
+
+- code: doc_parse
+  name: 文档解析
+  icon: 📄
+  roles: [student, teacher, parent]
+  prompt_template: 请解析这份文档，提取核心内容与结构，用要点形式总结，并回答我的追问。{params}
+  input_form_schema:
+    - {field: file_url, type: file, required: true, label: 文档文件}
+  card_type: null
+  sort_order: 3
+  is_active: true
+
+- code: oral_practice
+  name: 口语对练
+  icon: 🎤
+  roles: [student, parent]
+  prompt_template: 请和我进行英语口语对练。根据我的表达从发音、流利度、完整度评分，给出纠音建议，并继续下一句对话。{params}
+  input_form_schema:
+    - {field: scenario, type: select, required: false, label: 练习场景}
+    - {field: transcript, type: text, required: false, label: 我的表达}
+  card_type: oral_score
+  sort_order: 4
+  is_active: true
+
+- code: formula_helper
+  name: 公式助手
+  icon: ∑
+  roles: [student, teacher]
+  prompt_template: 请帮助处理数学公式：化简/求值/解方程，展示关键步骤，必要时用计算器工具验证结果。{params}
+  input_form_schema:
+    - {field: expression, type: text, required: true, label: 公式或方程}
+  card_type: null
+  sort_order: 5
+  is_active: true
+
+- code: chemistry_equation
+  name: 化学方程式
+  icon: ⚗️
+  roles: [student, teacher]
+  prompt_template: 请配平并讲解这个化学反应方程式，说明反应类型、条件与现象。{params}
+  input_form_schema:
+    - {field: equation, type: text, required: true, label: 化学方程式}
+  card_type: null
+  sort_order: 6
+  is_active: true
+
+- code: knowledge_check
+  name: 知识点检测
+  icon: 🎯
+  roles: [student, parent]
+  prompt_template: 请围绕指定知识点出 3-5 道检测题，逐题等我作答后批改，并给出掌握度评估与巩固建议。{params}
+  input_form_schema:
+    - {field: concept, type: text, required: true, label: 知识点}
+    - {field: subject, type: select, required: false, label: 学科}
+  card_type: null
+  sort_order: 7
+  is_active: true
+
+- code: study_plan
+  name: 学习计划
+  icon: 📅
+  roles: [student, parent]
+  prompt_template: 请根据我的目标与当前水平制定一份可执行的每日学习计划，任务具体到天、时长合理。{params}
+  input_form_schema:
+    - {field: goal_description, type: text, required: true, label: 学习目标}
+    - {field: current_level, type: text, required: true, label: 当前水平}
+    - {field: days, type: number, required: true, label: 计划天数}
+  card_type: plan_card
+  sort_order: 8
+  is_active: true
+
+- code: mistake_book
+  name: 错题本
+  icon: 📕
+  roles: [student, parent]
+  prompt_template: 请查看我的错题本：优先安排到期的复习题，逐题带我复习并记录复习结果；也可以把新错题录入错题本。{params}
+  input_form_schema:
+    - {field: subject, type: select, required: false, label: 学科}
+  card_type: mistake_card
+  sort_order: 9
+  is_active: true
+
+- code: flashcards
+  name: 记忆卡片
+  icon: 🃏
+  roles: [student, parent]
+  prompt_template: 请把给定内容做成一组记忆卡片（正面问题、背面答案），生成后带我按间隔重复节奏复习。{params}
+  input_form_schema:
+    - {field: content, type: text, required: false, label: 制卡内容}
+    - {field: count, type: number, required: false, label: 卡片数量}
+  card_type: flashcard_group
+  sort_order: 10
+  is_active: true
+
+- code: essay_coach
+  name: 作文辅导
+  icon: ✏️
+  roles: [student]
+  prompt_template: 请辅导我的作文：先点评结构与立意，再逐段给出修改建议与示范改写，最后总结可复用的写作技巧。{params}
+  input_form_schema:
+    - {field: essay, type: text, required: true, label: 作文内容}
+    - {field: grade, type: select, required: false, label: 年级}
+  card_type: null
+  sort_order: 11
+  is_active: true
+
+- code: web_search
+  name: 联网搜索
+  icon: 🔍
+  roles: [student, teacher]
+  prompt_template: 请联网检索与问题相关的权威教育资料，综合后作答，并附上来源链接。{params}
+  input_form_schema:
+    - {field: query, type: text, required: true, label: 搜索内容}
+  card_type: null
+  sort_order: 12
+  is_active: true
+
+- code: make_ppt
+  name: 制作 PPT
+  icon: 📊
+  roles: [teacher]
+  prompt_template: 请为课程制作 PPT 课件：设计每页大纲与要点，风格简洁适合课堂投屏。{params}
+  input_form_schema:
+    - {field: topic, type: text, required: true, label: 课件主题}
+    - {field: grade, type: select, required: true, label: 年级}
+    - {field: subject, type: select, required: true, label: 学科}
+    - {field: pages, type: number, required: false, label: 页数}
+  card_type: ppt_preview
+  sort_order: 13
+  is_active: true
+
+- code: make_lesson_plan
+  name: 制作教案
+  icon: 📋
+  roles: [teacher]
+  prompt_template: 请撰写一份完整教案：教学目标、重难点、分阶段教学过程、板书设计与作业布置。{params}
+  input_form_schema:
+    - {field: course_name, type: text, required: true, label: 课程名称}
+    - {field: grade, type: select, required: true, label: 年级}
+    - {field: duration, type: number, required: false, label: 课时分钟数}
+  card_type: lesson_plan_preview
+  sort_order: 14
+  is_active: true
+
+- code: make_exam_paper
+  name: 生成试卷
+  icon: 📝
+  roles: [teacher]
+  prompt_template: 请按题型与难度要求组一份试卷，覆盖指定知识点，含答案与解析，题目不重复。{params}
+  input_form_schema:
+    - {field: grade, type: select, required: true, label: 年级}
+    - {field: subject, type: select, required: true, label: 学科}
+    - {field: question_types, type: multiselect, required: true, label: 题型}
+    - {field: difficulty, type: select, required: false, label: 难度}
+    - {field: count, type: number, required: false, label: 题量}
+  card_type: exam_preview
+  sort_order: 15
+  is_active: true
+
+- code: learning_analysis
+  name: 学情分析
+  icon: 📈
+  roles: [teacher]
+  prompt_template: 请基于班级错题与成绩数据做学情分析：输出知识点掌握热力、薄弱点与教学建议报告。{params}
+  input_form_schema:
+    - {field: class_name, type: text, required: true, label: 班级名称}
+    - {field: analysis_type, type: select, required: false, label: 分析类型}
+  card_type: analysis_report
+  sort_order: 16
+  is_active: true

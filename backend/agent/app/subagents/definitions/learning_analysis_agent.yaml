@@ -1,0 +1,14 @@
+# 学情分析子 Agent（教师专属；异步：建行 + 投递 agent.gen.analysis）
+# 对应 §3.2 教师工具 learning_analysis：不实现为独立工具，仅经 sub_agent_dispatch 触达
+name: learning_analysis_agent
+description: 学情分析：班级/学生维度的错题统计与教学建议报告
+subject_routing:
+  default: edu-general-14b
+tools_allowlist: [knowledge_graph_query]
+async_via: celery
+timeout_s: 30
+card_type: analysis_report
+role_required: teacher
+input_form:
+  - {field: class_name, type: text, required: true}
+  - {field: analysis_type, type: select, required: false}

@@ -1,0 +1,286 @@
+# ============================================================================
+# EduAgent 编排层 SSE 事件协议（设计文档 §四 + 增强机制扩展包 §六）的机器可读定义
+# 端点：POST /v1/chat/stream → text/event-stream
+# 帧格式：id: <seq> / event: <event 类型> / data: <JSON>
+# 约束：事件类型枚举固定（9 + 7 类），禁止新增协议外字段；seq 单调递增；
+#       事件体禁止携带内部路径/堆栈/密钥；断线重连用 Last-Event-ID + ?run_id=
+# ============================================================================
+asyncapi: "3.0.0"
+info:
+  title: EduAgent 编排层 SSE 事件协议
+  version: "0.3.0"
+  description: |
+    Agent Loop 统一推送契约。所有事件 data 内携带单调递增的 seq（SSE 帧 id 即 seq）。
+    重连：客户端携带 Last-Event-ID（最后收到的 seq）与查询参数 run_id，
+    服务端从重放存储（Redis TTL 5 分钟）补发其后事件；超出窗口由客户端拉取消息全量兜底。
+
+servers:
+  agent:
+    host: agent:8002
+    protocol: http
+    description: 编排服务（仅 BFF 内网可达；鉴权 X-Internal-Token + X-User-Id）
+
+channels:
+  chatStream:
+    address: /v1/chat/stream
+    messages:
+      runStart:    { $ref: "#/components/messages/runStart" }
+      messageDelta:{ $ref: "#/components/messages/messageDelta" }
+      toolStart:   { $ref: "#/components/messages/toolStart" }
+      toolProgress:{ $ref: "#/components/messages/toolProgress" }
+      card:        { $ref: "#/components/messages/card" }
+      guardrailAsk:{ $ref: "#/components/messages/guardrailAsk" }
+      memoryUsed:  { $ref: "#/components/messages/memoryUsed" }
+      error:       { $ref: "#/components/messages/error" }
+      runEnd:      { $ref: "#/components/messages/runEnd" }
+      # ---- 增强机制扩展包 §六（Wave C 交互协作机制） ----
+      planOutline:     { $ref: "#/components/messages/planOutline" }
+      planStatus:      { $ref: "#/components/messages/planStatus" }
+      ask:             { $ref: "#/components/messages/ask" }
+      messageQueued:   { $ref: "#/components/messages/messageQueued" }
+      messageDequeued: { $ref: "#/components/messages/messageDequeued" }
+      runInterrupted:  { $ref: "#/components/messages/runInterrupted" }
+      toolCancelled:   { $ref: "#/components/messages/toolCancelled" }
+
+operations:
+  receiveChatStream:
+    action: receive
+    channel: { $ref: "#/channels/chatStream" }
+    summary: 服务端向客户端推送的 SSE 事件流
+
+components:
+  messages:
+    runStart:
+      summary: 每次 Loop 启动
+      payload: { $ref: "#/components/schemas/RunStart" }
+    messageDelta:
+      summary: 模型流式增量（打字机）
+      payload: { $ref: "#/components/schemas/MessageDelta" }
+    toolStart:
+      summary: 工具开始执行
+      payload: { $ref: "#/components/schemas/ToolStart" }
+    toolProgress:
+      summary: 长任务进度（异步子 Agent 经此推送）
+      payload: { $ref: "#/components/schemas/ToolProgress" }
+    card:
+      summary: 工具结果卡片（按 card_type 渲染）
+      payload: { $ref: "#/components/schemas/Card" }
+    guardrailAsk:
+      summary: 需确认；客户端调 POST /v1/guardrails/confirms 后重发请求放行
+      payload: { $ref: "#/components/schemas/GuardrailAsk" }
+    memoryUsed:
+      summary: 本 turn 注入的记忆 ID 列表（可审计、可关闭）
+      payload: { $ref: "#/components/schemas/MemoryUsed" }
+    error:
+      summary: 可读错误（禁止堆栈/内部路径）
+      payload: { $ref: "#/components/schemas/Error" }
+    runEnd:
+      summary: 正常结束/熔断/中断
+      payload: { $ref: "#/components/schemas/RunEnd" }
+    # ---- 增强机制扩展包 §六 ----
+    planOutline:
+      summary: Plan Mode 大纲（随 card_type=plan_outline 卡片渲染）
+      payload: { $ref: "#/components/schemas/PlanOutline" }
+    planStatus:
+      summary: Plan 状态机迁移通知
+      payload: { $ref: "#/components/schemas/PlanStatus" }
+    ask:
+      summary: AskUserQuestion 结构化提问；客户端回传 ask_id + answers（POST /v1/ask/answers）
+      payload: { $ref: "#/components/schemas/Ask" }
+    messageQueued:
+      summary: 消息进入优先级队列
+      payload: { $ref: "#/components/schemas/MessageQueued" }
+    messageDequeued:
+      summary: 消息出队被消费
+      payload: { $ref: "#/components/schemas/MessageDequeued" }
+    runInterrupted:
+      summary: 运行被打断（半截消息以 interrupted=true 落库）
+      payload: { $ref: "#/components/schemas/RunInterrupted" }
+    toolCancelled:
+      summary: 工具任务已真实取消（interruptBehavior=cancel）
+      payload: { $ref: "#/components/schemas/ToolCancelled" }
+
+  schemas:
+    RunStart:
+      type: object
+      required: [seq, run_id, session_id]
+      properties:
+        seq:        { type: integer, minimum: 1 }
+        run_id:     { type: string }
+        session_id: { type: [string, "null"] }
+      additionalProperties: false
+    MessageDelta:
+      type: object
+      required: [seq, text]
+      properties:
+        seq:    { type: integer, minimum: 1 }
+        run_id: { type: string }
+        text:   { type: string }
+      additionalProperties: false
+    ToolStart:
+      type: object
+      required: [seq, tool_name, display_name]
+      properties:
+        seq:          { type: integer, minimum: 1 }
+        run_id:       { type: string }
+        tool_name:    { type: string }
+        display_name: { type: string }
+      additionalProperties: false
+    ToolProgress:
+      type: object
+      required: [seq, tool_name]
+      properties:
+        seq:       { type: integer, minimum: 1 }
+        run_id:    { type: string }
+        tool_name: { type: string }
+        percent:   { type: number, minimum: 0, maximum: 100 }
+        note:      { type: string }
+      additionalProperties: false
+    Card:
+      type: object
+      required: [seq, card_type, card_data, file_urls]
+      properties:
+        seq:       { type: integer, minimum: 1 }
+        run_id:    { type: string }
+        card_type:
+          type: [string, "null"]
+          description: grading/ppt_preview/lesson_plan_preview/exam_preview/plan_card/analysis_report/flashcard_group/mistake_card/oral_score/plan_outline/todo_list/quality_warning
+        card_data: { type: [object, "null"] }
+        file_urls:
+          type: array
+          items: { type: string, format: uri }
+          description: MinIO 预签名 URL（过期 ≤1 小时）
+      additionalProperties: false
+    GuardrailAsk:
+      type: object
+      required: [seq, tool_name, question, confirm_token]
+      properties:
+        seq:           { type: integer, minimum: 1 }
+        run_id:        { type: string }
+        tool_name:     { type: string }
+        question:      { type: string }
+        confirm_token: { type: string, description: 120s 内有效；确认后重发请求携带 }
+      additionalProperties: false
+    MemoryUsed:
+      type: object
+      required: [seq, memory_ids]
+      properties:
+        seq:        { type: integer, minimum: 1 }
+        run_id:     { type: string }
+        memory_ids: { type: array, items: { type: string } }
+      additionalProperties: false
+    Error:
+      type: object
+      required: [seq, code, message]
+      properties:
+        seq:     { type: integer, minimum: 1 }
+        run_id:  { type: string }
+        code:
+          type: string
+          description: max_turns/token_budget/timeout/prompt_too_long/gateway_error/max_continuations/circuit_broken/internal_error
+        message: { type: string, description: 用户可读文案（禁止堆栈/内部路径） }
+      additionalProperties: false
+    RunEnd:
+      type: object
+      required: [seq, finish_reason, usage]
+      properties:
+        seq:           { type: integer, minimum: 1 }
+        run_id:        { type: string }
+        finish_reason:
+          type: string
+          enum: [stop, max_turns, token_budget, timeout, error, circuit_broken, interrupted, cancelled, awaiting_confirm]
+        usage:
+          type: object
+          required: [tokens_used, turns, tool_calls, compactions]
+          properties:
+            tokens_used: { type: integer }
+            turns:       { type: integer }
+            tool_calls:  { type: integer }
+            compactions: { type: integer }
+          additionalProperties: false
+      additionalProperties: false
+    # ---- 增强机制扩展包 §六（Wave C） ----
+    PlanOutline:
+      type: object
+      required: [seq, plan_id, version, outline]
+      properties:
+        seq:      { type: integer, minimum: 1 }
+        run_id:   { type: string }
+        plan_id:  { type: string }
+        version:  { type: integer, minimum: 1 }
+        outline:  { type: object, description: 大纲 JSON（如试卷题型分布/PPT 逐页要点） }
+      additionalProperties: false
+    PlanStatus:
+      type: object
+      required: [seq, plan_id, status]
+      properties:
+        seq:     { type: integer, minimum: 1 }
+        run_id:  { type: string }
+        plan_id: { type: string }
+        status:
+          type: string
+          enum: [drafting, awaiting_confirm, confirmed, generating, completed, cancelled, expired]
+      additionalProperties: false
+    Ask:
+      type: object
+      required: [seq, ask_id, questions]
+      properties:
+        seq:     { type: integer, minimum: 1 }
+        run_id:  { type: string }
+        ask_id:  { type: string, description: 客户端回传 answers 时携带（POST /v1/ask/answers） }
+        questions:
+          type: array
+          maxItems: 3
+          items:
+            type: object
+            required: [question, options, multi_select]
+            properties:
+              question:     { type: string }
+              multi_select: { type: boolean }
+              sensitive:    { type: boolean, description: 敏感决策（付费/删除/公开发布/家长确认）超时按取消 }
+              options:
+                type: array
+                minItems: 2
+                maxItems: 6
+                items:
+                  type: object
+                  required: [label, description]
+                  properties:
+                    label:       { type: string, maxLength: 20, description: 推荐项放首位且 label 末尾追加"（推荐）" }
+                    description: { type: string }
+                    preview:     { type: object, description: 产物类选项的结构化预览（大纲/模板风格/卷面样式） }
+      additionalProperties: false
+    MessageQueued:
+      type: object
+      required: [seq, message_id, priority]
+      properties:
+        seq:        { type: integer, minimum: 1 }
+        run_id:     { type: string }
+        message_id: { type: string }
+        priority:   { type: string, enum: [next, later] }
+      additionalProperties: false
+    MessageDequeued:
+      type: object
+      required: [seq, message_id, priority]
+      properties:
+        seq:        { type: integer, minimum: 1 }
+        run_id:     { type: string }
+        message_id: { type: string }
+        priority:   { type: string, enum: [next, later] }
+      additionalProperties: false
+    RunInterrupted:
+      type: object
+      required: [seq, reason]
+      properties:
+        seq:    { type: integer, minimum: 1 }
+        run_id: { type: string }
+        reason: { type: string, description: stop_requested/ask_timeout_cancelled 等 }
+      additionalProperties: false
+    ToolCancelled:
+      type: object
+      required: [seq, tool_name]
+      properties:
+        seq:       { type: integer, minimum: 1 }
+        run_id:    { type: string }
+        tool_name: { type: string }
+      additionalProperties: false

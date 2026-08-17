@@ -1,0 +1,14 @@
+# 教案子 Agent（教师专属；异步：建行 + 投递 agent.gen.lesson_plan）
+name: lesson_plan_agent
+description: 制作教案：教学目标、重难点与教学过程设计
+subject_routing:
+  default: edu-general-14b
+tools_allowlist: [web_search, knowledge_graph_query]
+async_via: celery
+timeout_s: 30
+card_type: lesson_plan_preview
+role_required: teacher
+input_form:
+  - {field: course_name, type: text, required: true}
+  - {field: grade, type: select, required: true}
+  - {field: duration, type: number, required: false}
