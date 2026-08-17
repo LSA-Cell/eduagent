@@ -91,6 +91,25 @@ async def test_refresh_rejects_access_token(client):
     assert resp.json()["code"] == "invalid_refresh_token"
 
 
+async def test_refresh_token_single_use_rotation(client):
+    """旧 refresh token 旋转后即作废，重放必须 401。"""
+    register = await client.post(
+        "/api/v1/auth/register", json={"phone": "13800000003", "password": "password123"}
+    )
+    refresh_token = register.json()["tokens"]["refresh_token"]
+
+    first = await client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
+    assert first.status_code == 200
+    replay = await client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
+    assert replay.status_code == 401
+    assert replay.json()["code"] == "invalid_refresh_token"
+    # 新签发的 refresh token 可继续正常轮换
+    second = await client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": first.json()["refresh_token"]}
+    )
+    assert second.status_code == 200
+
+
 async def test_switch_user_mode(client):
     token = await register_and_login(client)
     resp = await client.put(

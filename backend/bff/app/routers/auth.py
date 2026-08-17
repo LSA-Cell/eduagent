@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import uuid
 
+import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends
+from redis.exceptions import RedisError
 
 from eduagent_shared.config import get_settings
+from eduagent_shared.logging import get_logger
 from eduagent_shared.security.jwt import (
     TokenError,
     create_access_token,
@@ -14,7 +17,7 @@ from eduagent_shared.security.jwt import (
     decode_token,
 )
 
-from ..deps import get_user_store
+from ..deps import get_redis, get_user_store
 from ..errors import AppError
 from ..schemas import (
     LoginRequest,
@@ -28,6 +31,9 @@ from ..services.password import hash_password, verify_password
 from ..services.store import UserStore
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+log = get_logger("bff.auth")
+
+_USED_REFRESH_PREFIX = "rfused"
 
 
 def _issue_tokens(user) -> TokenResponse:
@@ -73,14 +79,39 @@ async def login(
 async def refresh(
     payload: RefreshRequest,
     user_store: UserStore = Depends(get_user_store),
+    redis: aioredis.Redis = Depends(get_redis),
 ) -> TokenResponse:
-    """刷新令牌换发新令牌对（refresh token 旋转）。"""
+    """刷新令牌换发新令牌对（refresh token 旋转：旧 jti 一次性作废）。
+
+    Redis 记录已用 jti（TTL=refresh 有效期）；Redis 故障时 fail-open 并告警，
+    与限流器同一可用性策略，避免缓存故障拖垮登录链路。
+    """
     try:
         claims = decode_token(payload.refresh_token, expected_type="refresh")
         user_id = uuid.UUID(str(claims["sub"]))
     except (TokenError, KeyError, ValueError):
         raise AppError(401, "invalid_refresh_token", "刷新令牌无效或已过期") from None
+
+    jti = claims.get("jti")
+    settings = get_settings()
+    ttl_seconds = settings.refresh_token_expire_days * 86400
+    if jti:
+        try:
+            if await redis.exists(f"{_USED_REFRESH_PREFIX}:{jti}"):
+                raise AppError(
+                    401, "invalid_refresh_token", "刷新令牌已失效，请重新登录"
+                )
+        except RedisError as exc:
+            log.warning("refresh_jti_check_redis_error", error=str(exc))
+
     user = await user_store.get_by_id(user_id)
     if user is None:
         raise AppError(401, "unauthorized", "用户不存在或已被删除")
-    return _issue_tokens(user)
+
+    tokens = _issue_tokens(user)
+    if jti:
+        try:
+            await redis.setex(f"{_USED_REFRESH_PREFIX}:{jti}", ttl_seconds, "1")
+        except RedisError as exc:
+            log.warning("refresh_jti_mark_redis_error", error=str(exc))
+    return tokens

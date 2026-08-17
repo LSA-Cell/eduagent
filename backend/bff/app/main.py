@@ -46,6 +46,12 @@ async def lifespan(app: FastAPI):
     await db.dispose_engine()
 
 
+def _cors_origins() -> list[str]:
+    """把 CORS_ORIGINS（逗号分隔字符串）解析成来源列表；默认 * 保持 dev 行为不变。"""
+    raw = get_settings().cors_origins
+    return [o.strip() for o in raw.split(",") if o.strip()]
+
+
 def create_app() -> FastAPI:
     configure_logging()
     app = FastAPI(title="EduAgent BFF", version="0.1.0", lifespan=lifespan)
@@ -55,7 +61,7 @@ def create_app() -> FastAPI:
     app.add_middleware(RateLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # 移动端无浏览器跨域限制，dev 全放开；生产收敛到 App 域名
+        allow_origins=_cors_origins(),  # 移动端无浏览器跨域限制，dev 默认 *；生产用 CORS_ORIGINS 收敛到 App 域名
         allow_methods=["*"],
         allow_headers=["*"],
     )
