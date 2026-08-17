@@ -10,8 +10,20 @@ import json
 from functools import lru_cache
 from typing import Any
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_DEV_ENVS = {"dev", "test"}
+
+# 代码库内公开的占位默认值；非 dev/test 环境出现即拒绝启动（防裸奔上线）。
+_PLACEHOLDER_SECRETS = {
+    "",
+    "change_me_postgres",
+    "change_me_minio",
+    "change_me_jwt_secret",
+    "change_me_base64_32bytes_master_key",
+    "change_me_internal_service_token",
+}
 
 
 class Settings(BaseSettings):
@@ -84,6 +96,11 @@ class Settings(BaseSettings):
     rate_limit_paid: int = 60
     rate_limit_teacher: int = 100
 
+    # ---------- CORS（BFF） ----------
+    # 逗号分隔的来源字符串；默认 * 仅用于 dev/移动端，生产环境显式配置域名
+    # 用 str 而非 list[str]：pydantic-settings 对复杂类型会先按 JSON 解码，CSV 字符串会解析失败
+    cors_origins: str = "*"
+
     @field_validator("vllm_routes", mode="before")
     @classmethod
     def _parse_vllm_routes(cls, v: Any) -> Any:
@@ -94,6 +111,26 @@ class Settings(BaseSettings):
                 return {}
             return json.loads(v)
         return v
+
+    @model_validator(mode="after")
+    def _reject_placeholder_secrets_outside_dev(self) -> "Settings":
+        """非 dev/test 环境下，核心密钥仍为代码库公开占位值时拒绝启动（fail-closed）。"""
+        if self.app_env in _DEV_ENVS:
+            return self
+        secret_fields = (
+            "jwt_secret",
+            "internal_service_token",
+            "key_encryption_master_key",
+            "postgres_password",
+            "minio_secret_key",
+        )
+        bad = [f for f in secret_fields if getattr(self, f) in _PLACEHOLDER_SECRETS]
+        if bad:
+            raise ValueError(
+                f"APP_ENV={self.app_env!r} 环境下检测到默认占位密钥：{', '.join(bad)}；"
+                "请在 .env 中配置真实密钥后再启动"
+            )
+        return self
 
 
 @lru_cache

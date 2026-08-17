@@ -33,12 +33,17 @@ def _load_key(raw: str) -> bytes:
 
     标准格式为 32 字节的 base64；开发环境常见的占位字符串（非合法 base64 或长度不符）
     统一用 SHA-256 派生，保证本地可跑——生产环境必须配置标准 base64 密钥。
+    非 dev/test 环境下走派生路径意味着密钥是公开占位串，直接拒绝（fail-closed）。
     """
     try:
         key = base64.urlsafe_b64decode(raw + "=" * (-len(raw) % 4))
     except Exception:
         key = b""
     if len(key) != 32:
+        if get_settings().app_env not in ("dev", "test"):
+            raise DecryptError(
+                "主密钥不是合法的 32 字节 base64，非 dev/test 环境禁止占位派生"
+            )
         key = hashlib.sha256(raw.encode("utf-8")).digest()
     return key
 

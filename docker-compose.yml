@@ -26,7 +26,7 @@ services:
     env_file:
       - .env                       # POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       # 完整 DDL + pgvector + 索引 + RLS，仅首次启动（数据卷为空）时执行
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
@@ -48,7 +48,7 @@ services:
       - .env
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -71,8 +71,8 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-change_me_minio}
     command: ["server", "/data", "--console-address", ":9001"]
     ports:
-      - "9000:9000"                # S3 API
-      - "9001:9001"                # 控制台
+      - "127.0.0.1:9000:9000"          # S3 API
+      - "127.0.0.1:9001:9001"          # 控制台
     volumes:
       - minio_data:/data
     healthcheck:
@@ -125,7 +125,7 @@ services:
     env_file:
       - .env
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -167,7 +167,7 @@ services:
     env_file:
       - .env
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
     depends_on:
       # gpu profile 未启用时跳过（required: false，Compose >= 2.20）；
       # 启用时等待 vLLM 加载完模型并健康
@@ -198,7 +198,7 @@ services:
     env_file:
       - .env
     ports:
-      - "8002:8002"
+      - "127.0.0.1:8002:8002"
     depends_on:
       postgres:
         condition: service_healthy
@@ -282,7 +282,7 @@ services:
     env_file:
       - .env
     ports:
-      - "8003:8003"
+      - "127.0.0.1:8003:8003"
     healthcheck:
       test: ["CMD", "python3", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8003/health', timeout=5)"]
@@ -303,7 +303,7 @@ services:
     env_file:
       - .env
     ports:
-      - "8004:8004"
+      - "127.0.0.1:8004:8004"
     healthcheck:
       test: ["CMD", "python3", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8004/health', timeout=5)"]
@@ -325,7 +325,7 @@ services:
     env_file:
       - .env
     ports:
-      - "8005:8005"
+      - "127.0.0.1:8005:8005"
     depends_on:
       redis:
         condition: service_healthy
@@ -362,7 +362,7 @@ services:
       --max-model-len 8192
       --gpu-memory-utilization 0.85
     ports:
-      - "8100:8100"
+      - "127.0.0.1:8100:8100"
     volumes:
       # 本地模型权重目录（只读挂载）；HuggingFace 缓存用命名卷避免重复下载
       - ${VLLM_MODELS_DIR:-./infra/models}:/models:ro
@@ -398,7 +398,7 @@ services:
       --max-model-len 8192
       --gpu-memory-utilization 0.85
     ports:
-      - "8101:8101"
+      - "127.0.0.1:8101:8101"
     volumes:
       - ${VLLM_MODELS_DIR:-./infra/models}:/models:ro
       - vllm_cache:/root/.cache/huggingface
