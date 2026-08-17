@@ -1,0 +1,12 @@
+# 口语评分子 Agent（同步：进程内递归 Loop，预估 <3s 的短任务）
+name: oral_scoring_agent
+description: 口语评分：发音/流利度/完整度多维度打分与纠音建议
+subject_routing:
+  default: edu-general-14b
+tools_allowlist: []
+async_via: none
+timeout_s: 20
+card_type: oral_score
+input_form:
+  - {field: transcript, type: text, required: true}
+  - {field: scenario, type: select, required: false}

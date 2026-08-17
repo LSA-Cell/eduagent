@@ -1,0 +1,5 @@
+# ---------- 运行依赖 ----------
+# 注：eduagent_shared 为本地包，由 Dockerfile / 本地开发命令以 pip install -e ../shared 安装
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.29,<1.0
+bcrypt>=4.1,<6.0

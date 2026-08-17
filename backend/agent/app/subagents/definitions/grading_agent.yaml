@@ -1,0 +1,12 @@
+# 作业批改子 Agent：圈错、正解、知识点归因（异步：投递 Celery，worker 内跑子 Loop）
+name: grading_agent
+description: 作业批改：圈错、正解、知识点归因
+subject_routing:
+  math: edu-math-7b
+  default: edu-general-14b
+tools_allowlist: [ocr_extract, calculator, equation_solver, mistake_recorder]
+async_via: celery
+timeout_s: 30
+card_type: grading
+input_form:
+  - {field: subject, type: select, required: true}

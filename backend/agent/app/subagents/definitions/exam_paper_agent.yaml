@@ -1,0 +1,17 @@
+# 组卷子 Agent（教师专属；异步：建行 + 投递 agent.gen.exam_paper）
+name: exam_paper_agent
+description: 生成试卷：按题型/难度/知识点组卷并校验质量
+subject_routing:
+  math: edu-math-7b
+  default: edu-general-14b
+tools_allowlist: [knowledge_graph_query, calculator]
+async_via: celery
+timeout_s: 30
+card_type: exam_preview
+role_required: teacher
+input_form:
+  - {field: grade, type: select, required: true}
+  - {field: subject, type: select, required: true}
+  - {field: question_types, type: multiselect, required: true}
+  - {field: difficulty, type: select, required: false}
+  - {field: count, type: number, required: false}

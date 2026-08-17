@@ -1,0 +1,15 @@
+# PPT 课件子 Agent（教师专属；异步：建行 + 投递 agent.gen.presentation）
+name: ppt_agent
+description: 制作 PPT 课件：大纲生成与排版渲染
+subject_routing:
+  default: edu-general-14b
+tools_allowlist: [web_search, knowledge_graph_query]
+async_via: celery
+timeout_s: 30
+card_type: ppt_preview
+role_required: teacher
+input_form:
+  - {field: topic, type: text, required: true}
+  - {field: grade, type: select, required: true}
+  - {field: subject, type: select, required: true}
+  - {field: pages, type: number, required: false}
