@@ -1,0 +1,189 @@
+{
+  "target": "/Users/lixichen/Desktop/教育agent",
+  "scan_time": "2026-08-17T20:29:24Z",
+  "modules": [
+    "deps",
+    "secrets",
+    "owasp"
+  ],
+  "findings": [
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "security_scan_full.json",
+      "line": 16,
+      "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"static const _kAccessToken = 'access_token';\\\",\",",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "security_scan_full.json",
+      "line": 25,
+      "snippet": "\"snippet\": \"\\\"snippet\\\": \\\"static const _kRefreshToken = 'refresh_token';\\\",\",",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "security_scan_full.json",
+      "line": 88,
+      "snippet": "\"snippet\": \"static const _kAccessToken = 'access_token';\",",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "security_scan_full.json",
+      "line": 97,
+      "snippet": "\"snippet\": \"static const _kRefreshToken = 'refresh_token';\",",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "security_audit_2026-08-18.md",
+      "line": 24,
+      "snippet": "| 1 | `mobile/lib/core/storage/secure_storage.dart:15-16` | `_kAccessToken = 'access_token'` 是 Hive **存储键名**，不是密钥值 |",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "security_audit_2026-08-18.md",
+      "line": 32,
+      "snippet": "| 4 | `backend/agent/tests/conftest.py:19` | `INTERNAL_TOKEN = \"test-internal-token\"` 测试桩 |",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "security_audit_2026-08-18.md",
+      "line": 33,
+      "snippet": "| 5 | `backend/agent/tests/test_voice.py:73` | `token=\"wrong-token\"` 负数测试用例 |",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "security_audit_2026-08-18.md",
+      "line": 34,
+      "snippet": "| 6 | `backend/scripts/smoke_integration.py:113` | `password = \"smoke-test-123\"` 本地冒烟脚本 |",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "security_audit_2026-08-18.md",
+      "line": 40,
+      "snippet": "| 7 | `backend/scripts/smoke_integration.py:31` | `INTERNAL_TOKEN = \"change_me_internal_service_token\"  # 与 .env 一致`：当前是占位符，无泄露。但若有人填入真实 token 会进入代码库。**建议改为 `os.environ[\"INTERNAL_TOKEN\"]` 从环境读取**，从机制上",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "security_report.json",
+      "line": 61,
+      "snippet": "\"snippet\": \"static const _kAccessToken = 'access_token';\",",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "security_report.json",
+      "line": 70,
+      "snippet": "\"snippet\": \"static const _kRefreshToken = 'refresh_token';\",",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "backend/agent/tests/test_voice.py",
+      "line": 73,
+      "snippet": "headers=auth_headers(token=\"wrong-token\"),",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "backend/agent/tests/conftest.py",
+      "line": 19,
+      "snippet": "INTERNAL_TOKEN = \"test-internal-token\"",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "backend/agent/tests/test_tool_summary.py",
+      "line": 88,
+      "snippet": "secret = \"我的作文原文：那是一个风雪交加的夜晚，我独自走在回家的路上\" * 5",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "High-entropy string (entropy=4.56)",
+      "severity": "medium",
+      "file": "backend/agent/tests/test_tool_summary.py",
+      "line": 88,
+      "snippet": "secret = \"我的作文原文：那是一个风雪交加的夜晚，我独自走在回家的路上\" * 5",
+      "category": "entropy-detection"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "backend/scripts/smoke_integration.py",
+      "line": 31,
+      "snippet": "INTERNAL_TOKEN = \"change_me_internal_service_token\"  # 与 .env 一致",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "backend/scripts/smoke_integration.py",
+      "line": 113,
+      "snippet": "password = \"smoke-test-123\"",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "mobile/lib/core/storage/secure_storage.dart",
+      "line": 16,
+      "snippet": "static const _kAccessToken = 'access_token';",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "mobile/lib/core/storage/secure_storage.dart",
+      "line": 17,
+      "snippet": "static const _kRefreshToken = 'refresh_token';",
+      "category": "secret-pattern"
+    }
+  ],
+  "summary": {
+    "critical": 0,
+    "high": 18,
+    "medium": 1,
+    "low": 0,
+    "total": 19
+  }
+}

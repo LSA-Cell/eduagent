@@ -1,0 +1,81 @@
+{
+  "target": "/Users/lixichen/Desktop/教育agent",
+  "scan_time": "2026-08-17T14:41:04Z",
+  "modules": [
+    "deps",
+    "secrets",
+    "owasp"
+  ],
+  "findings": [
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "backend/agent/tests/test_voice.py",
+      "line": 73,
+      "snippet": "headers=auth_headers(token=\"wrong-token\"),",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "backend/agent/tests/conftest.py",
+      "line": 19,
+      "snippet": "INTERNAL_TOKEN = \"test-internal-token\"",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "backend/agent/tests/test_tool_summary.py",
+      "line": 88,
+      "snippet": "secret = \"我的作文原文：那是一个风雪交加的夜晚，我独自走在回家的路上\" * 5",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "backend/scripts/smoke_integration.py",
+      "line": 31,
+      "snippet": "INTERNAL_TOKEN = \"change_me_internal_service_token\"  # 与 .env 一致",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "backend/scripts/smoke_integration.py",
+      "line": 113,
+      "snippet": "password = \"smoke-test-123\"",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "mobile/lib/core/storage/secure_storage.dart",
+      "line": 15,
+      "snippet": "static const _kAccessToken = 'access_token';",
+      "category": "secret-pattern"
+    },
+    {
+      "scanner": "secrets",
+      "name": "Generic Secret/Token/Password",
+      "severity": "high",
+      "file": "mobile/lib/core/storage/secure_storage.dart",
+      "line": 16,
+      "snippet": "static const _kRefreshToken = 'refresh_token';",
+      "category": "secret-pattern"
+    }
+  ],
+  "summary": {
+    "critical": 0,
+    "high": 7,
+    "medium": 0,
+    "low": 0,
+    "total": 7
+  }
+}

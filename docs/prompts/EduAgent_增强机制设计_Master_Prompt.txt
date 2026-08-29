@@ -1,0 +1,516 @@
+# EduAgent —— Agent 增强机制设计 Master Prompt（编排层扩展包）
+
+> **本文件定位**：本文档是《EduAgent 编排层设计 Master Prompt》（下称"编排层提示词"）的**扩展包**，
+> 在编排层既有 11 项核心机制之上，新增 19 项增强机制（全部提炼自 Claude Code 架构并翻译为
+> EduAgent 服务端形态）。两者必须配合使用：
+> - 编排层提示词定义的基础红线（推理网关隔离、Celery 异步、护栏链、SSE 协议等）**全部继续有效**；
+> - 本文件只定义新增机制；与编排层提示词表述冲突时，**基础安全红线以编排层为准，新增机制以本文件为准**。
+>
+> **总技术栈约束（不可越界）**：Python 3.11+ / FastAPI / Celery + Redis / PostgreSQL 15 + pgvector /
+> MinIO / Flutter 3.x。所有机制落地于 `backend/agent/` 与 Flutter 端卡片协议，禁止引入其他运行时依赖。
+
+---
+
+## 一、机制总览与优先级
+
+| 档 | 机制 | 价值 | 优先级 |
+|----|------|------|--------|
+| 一、交互协作 | 2.1 Plan Mode 两段式生成 | 长内容先生成大纲、确认后再生成全文 | P0 |
+| | 2.2 AskUserQuestion 结构化提问 | Agent 中途用选项卡片澄清需求 | P0 |
+| | 2.3 消息优先级队列与打断语义 | 生成中追加消息/取消的确定性处理 | P0 |
+| | 2.4 AgentTodo 可见任务清单 | 多阶段任务进度 checklist | P1 |
+| | 2.5 Stop Hooks 收尾校验 | 交付前强制质量闸口 | P0 |
+| 二、上下文与成本 | 3.1 Prompt-Cache 感知压缩 | 第三方 API 输入费用减半的关键 | P1 |
+| | 3.2 ToolUseSummary 工具摘要 | UI 展示与压缩占位复用 | P2 |
+| | 3.3 Denial Tracking 拒绝追踪 | 推荐降频/默认值自适应 | P2 |
+| | 3.4 Cost Tracker 成本台账 | 配额、预算、计费的数据底座 | P1 |
+| 三、智能增值 | 4.1 PromptSuggestion 追问推荐 | "你可能想问"，提升留存 | P2 |
+| | 4.2 DreamTask 夜间记忆整合 | 错题整理/复习卡的离线生产 | P1 |
+| | 4.3 工具延迟加载与搜索发现 | 16 工具不全量驻留上下文 | P1 |
+| 四、工程基础 | 5.1 分段 Checkpoint 观测 | SLA 瓶颈定位 | P1 |
+| | 5.2 Feature Gates 灰度 | 教师功能/新模型分批放量 | P2 |
+| | 5.3 Output Styles 风格注册表 | 年级/学科语气不改代码可调 | P2 |
+| | 5.4 自动化 Hooks 与降级路径 | 家长联动通知、多模态兜底 | P1 |
+
+---
+
+## 二、分档一：交互协作机制
+
+### 2.1 Plan Mode 两段式生成（P0）
+
+**需求说明**：
+1. **适用范围**（白名单）：制作 PPT、制作教案、生成试卷、学习计划、学情分析报告——长内容生成类 Skill。
+   快问快答（拍照答疑、公式助手等）禁止进入 Plan 流程。
+2. **流程状态机**：`drafting → awaiting_confirm → confirmed → generating → completed`，
+   旁路状态 `cancelled / expired`。每次状态迁移推送 SSE 事件。
+3. **大纲阶段**：Agent 生成 outline JSON（如试卷：题型分布/知识点覆盖/难度配比/逐题标题；
+   PPT：每页标题+要点），以 `card_type: plan_outline` 卡片推送，进入 `awaiting_confirm`。
+4. **确认协议**：确认请求携带 `confirm_token`（绑定 plan_id + user_id + 过期时间 30 分钟）。
+   用户操作三选一：**确认**（→ confirmed，投递生成任务）/ **修改**（提交修改意见 → 回到 drafting，
+   产生新 plan_version，旧版本保留）/ **取消**（→ cancelled）。超时未操作 → expired。
+5. **同源约束**：生成任务（Celery）的入参必须包含**确认时的大纲快照**（outline_snapshot），
+   生成内容以大纲为骨架展开，允许润色表述、禁止变更结构与范围。
+6. **大纲阶段权限**：drafting/awaiting_confirm 期间 Agent 只允许调用只读工具
+   （检索、计算、知识图谱查询），禁止任何写工具与文件生成。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | 大纲未经 confirmed 状态，禁止投递任何 Celery 生成任务（代码上以前置状态校验强制） |
+| 2 | 生成任务入参缺失 outline_snapshot 视为非法任务，Worker 必须拒收 |
+| 3 | 用户修改大纲必须产生新 plan_version，禁止原地覆盖历史版本 |
+| 4 | confirm_token 禁止跨用户、跨 plan 复用；过期 token 一律拒绝 |
+| 5 | Plan Mode 不新增 SSE 协议外字段，大纲卡片走既有 `card` 事件 |
+
+### 2.2 AskUserQuestion 结构化中途提问（P0）
+
+**需求说明**：
+1. **触发**：Agent 在 Loop 中调用内置工具 `ask_user_question`；Loop 挂起等待答复
+   （挂起状态存 Redis，TTL 120s），答复到达后注入消息历史继续循环。
+2. **问题协议**：每次最多 3 题；每题含 `question`、`options[]`（2–6 个，每项含
+   `label ≤20字`、`description`、可选 `preview`）、`multi_select`（默认 false）。
+3. **推荐项约定**：有推荐答案时，该选项必须放第一位且 label 末尾追加"（推荐）"。
+4. **preview 预览**：选项为具体产物（大纲、模板风格、卷面样式）时必须携带 preview
+   结构化内容，Flutter 渲染为**左选项列表 + 右预览**的并排卡片；简单偏好问题禁止滥用 preview。
+5. **超时策略分级**：普通澄清超时 → 按推荐项默认值继续并在后续回答中明示；
+   **敏感决策（付费、删除、公开发布、家长确认项）超时 → 一律按取消处理**。
+6. **频次上限**：单次 run 内 ask 不超过 2 次；第 3 次需求必须合并进当次多问或放弃追问直接作答。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | 能选项化的追问禁止退化为自由文本提问（评审以"选项覆盖率"抽查） |
+| 2 | 敏感决策禁止使用"推荐项默认继续"策略，超时必须按取消处理 |
+| 3 | ask 挂起期间禁止模型请求空转计费；恢复必须等用户答复或超时事件 |
+| 4 | 每 run ask 次数 >2 视为缺陷；连续两个 turn 都 ask 视为缺陷 |
+
+### 2.3 消息优先级队列与打断语义（P0)
+
+**需求说明**：
+1. **两级优先级**：`next`（控制类消息：停止、确认答复、ask 答复）> `later`（普通追问）。
+   同级 FIFO；队列上限 20 条，超出拒绝并提示。
+2. **打断决策表**：
+   - 模型流式输出中收到 `later` 消息 → 当前 turn 正常收尾后立即消费（steer）；
+   - 工具执行中收到消息 → 查该工具的 `interruptBehavior`：`cancel` 则真实取消
+     （asyncio.Task 取消 + 推送 `tool.cancelled`），`block` 则排队等工具结束；
+   - 任何时刻收到 `next` 类控制消息 → 立即处理，禁止排队。
+3. **SSE 增量事件**：`message.queued`、`message.dequeued`、`run.interrupted`、`tool.cancelled`。
+4. **取消真实性**：取消必须贯穿到工具执行层与（如已发出）模型流式请求的中断，
+   禁止"前端显示已停止、后端仍在计费生成"。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | 取消指令未真实传递到执行层（仅改 UI 状态）→ 否决 |
+| 2 | 控制类消息（confirm_token/ask 答复）被普通排队阻塞导致超时 → 否决 |
+| 3 | 工具未声明 `interruptBehavior` 默认按 `block` 处理，禁止隐式 cancel |
+| 4 | 打断后的半截消息必须标记 `interrupted=true` 落库，禁止以完整消息呈现 |
+
+### 2.4 AgentTodo 可见任务清单（P1）
+
+**需求说明**：
+1. 内置工具 `todo_write`：`items[] = {content, status: pending|in_progress|completed}`，
+   仅允许在多阶段子 Agent 任务（组卷、学情分析、PPT 生成、DreamTask）中使用。
+2. 每次更新推送 `card` 事件（`card_type: todo_list`），Flutter 渲染 checklist。
+3. 约束：同一时间只允许 1 个 `in_progress`；全部 completed 前禁止产出最终交付卡片。
+4. Todo 快照随 `agent_runs` 落库（JSONB），用于回放与审计。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | Todo 仅作进度可视化与 Agent 自约束，**禁止充当业务数据存储**——学习计划任务走 `study_plans` 表，复习项走 `flashcards` 表 |
+| 2 | 禁止多个 in_progress 并存；禁止跳状态（pending 直接 completed 需有对应工具执行记录佐证） |
+| 3 | 前端 todo 卡片只读，禁止用户直接勾选修改（用户操作走 ask/plan 通道） |
+
+### 2.5 Stop Hooks 收尾校验（P0）
+
+**需求说明**：
+1. **机制**：模型输出 stop 意图时，编排层按当前上下文匹配已注册校验器；校验失败则把
+   失败原因作为 blocking 消息注入 Loop 强制继续，**同一 run 最多强制继续 2 次**；
+   第 3 次仍失败 → 携带 `warning` 标记交付并落审计。
+2. **首批注册校验器**：
+   - `math_verify`：数值/方程类答案经 SymPy 沙箱复核（方程解回代、表达式等值性）；
+   - `grading_consistency`：批改结论与被引用的标准答案/评分细则一致性检查；
+   - `completeness_check`：教案（目标/重难点/过程/板书/作业/反思六模块齐全）、
+     试卷（题量/分值合计/答案解析齐全）、PPT（标题页/目录/正文/总结页齐全）完整性校验。
+3. **校验器要求**：确定性代码或推理网关小模型；单次执行 ≤2s；结果与理由落 `stop_hook_audits`。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | 强制继续无上限（死循环烧 Token）→ 否决；上限固定 2 次 |
+| 2 | 校验器单次 >2s 或引入新的外部网络依赖 → 否决 |
+| 3 | 校验器只许读上下文与沙箱计算，**禁止写业务表**（写入由 Loop 正常路径完成） |
+| 4 | 带 warning 交付的内容必须在前端有可见标识，禁止静默降级 |
+
+---
+
+## 三、分档二：上下文与成本工程
+
+### 3.1 Prompt-Cache 感知压缩（P1）
+
+**需求说明**：
+1. **前缀稳定区**：System Prompt 主体、工具定义、记忆注入区块、Output Style 区块，
+   位于消息序列前缀，要求**字节级稳定**——压缩管线只允许在"压缩边界之后"编辑，
+   禁止重排/改写前缀任何字符。
+2. **缓存破坏检测**：每次请求前计算前缀 hash 并与上一次对比；破坏即落审计并告警，
+   附带定位到具体变更来源（哪一级压缩/哪次注入导致）。
+3. **指标**：第三方 API 的缓存命中 token 占比纳入观测看板，目标 ≥ 60%（长会话）。
+4. 与编排层四级压缩管线的关系：本机制是对其 L1–L4 的**约束增强**，不改变触发条件。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | 任何压缩/注入逻辑改写前缀稳定区 → 否决 |
+| 2 | 记忆注入位置禁止逐字变动（排序固定、截断规则固定、时间戳等易变字段禁止出现在前缀） |
+| 3 | 缓存破坏只有日志没有告警 → 视为未实现 |
+
+### 3.2 ToolUseSummary 工具摘要（P2）
+
+**需求说明**：每个工具执行完成后生成 ≤50 字一句话摘要，双用途：
+① UI 展示（"正在使用 作业批改…"的后续说明）；② 压缩管线的占位文本。
+**生成策略**：优先模板拼接（工具名+关键参数+结果状态），模板不覆盖时经推理网关小模型生成。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | 模板命中率 <80% 视为未达标；小模型路径单次 ≤100ms 且失败必须回退模板 |
+| 2 | 摘要禁止包含用户隐私原文（如整段作文），只允许元信息级描述 |
+
+### 3.3 Denial Tracking 拒绝追踪（P2）
+
+**需求说明**：
+1. `denial_counters` 表记录（user_id, target_code）维度的 `consecutive / total` 拒绝计数；
+   target 可为 Skill、工具、追问推荐类别。
+2. **阈值策略**：consecutive ≥3 → 该类别推荐降频（排序沉底）；total ≥20 → 默认关闭并下次启动时提示。
+3. **恢复**：用户主动使用一次 → consecutive 清零。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | 计数只影响推荐排序与默认值，**禁止用于限制用户主动发起的功能** |
+| 2 | 拒绝数据不出域、不共享，禁止用于用户画像外的用途 |
+
+### 3.4 Cost Tracker 成本台账（P1）
+
+**需求说明**：
+1. `cost_ledger` 表逐 run 记录：model_route、input/output/cache_hit tokens、
+   单价快照、折算成本（美分）、身份档。
+2. 实时聚合用户月度用量，与编排层配额/预算校验联动（护栏链第③环读取）。
+3. 单价表存数据库按 provider+model 配置，支持历史快照（对账可溯源）。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | 单价硬编码进代码 → 否决 |
+| 2 | 前端只见配额百分比，禁止暴露成本明细与单价 |
+| 3 | 台账写入失败必须降级为异步补写并告警，禁止因记账失败阻断用户请求 |
+
+---
+
+## 四、分档三：智能增值机制
+
+### 4.1 PromptSuggestion 追问推荐（P2）
+
+**需求说明**：
+1. 每个 run 正常结束后，经推理网关小模型基于当前会话生成 3 条候选追问，
+   以 SSE `suggestions` 事件推送，Flutter 渲染为输入框上方 chips。
+2. **speculation 预取**（可选，默认关闭，Feature Gate 控制）：仅允许预取**只读数据**
+   （相关题目、知识点条目），禁止预取任何生成类/计费类任务。
+3. 推荐内容必须过内容审核（护栏链第①环复用）后方可下发。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | 推荐未过内容审核即下发 → 否决 |
+| 2 | 推荐生成禁止跨会话挖掘（只用当前会话 + 当前学科上下文） |
+| 3 | speculation 默认开启或预取生成类任务 → 否决 |
+
+### 4.2 DreamTask 夜间记忆整合（P1）
+
+**需求说明**：
+1. **触发**：Celery beat 每日低峰（默认 02:00–05:00 分批）；只处理当日有活动的用户。
+2. **四阶段固定流水线**：`orient`（盘点当日会话与工具产物）→ `gather`（错题聚类、
+   知识点归并）→ `consolidate`（更新知识点掌握度矩阵、生成/更新复习卡片、沉淀长期记忆）
+   → `prune`（清理过期缓存与临时文件）。阶段产物落 `dream_runs`。
+3. **并发锁**：Redis 分布式锁（用户粒度），锁冲突即跳过该用户当日整合，禁止并发双跑。
+4. **产出呈现**：次日用户首次启动推送 `card_type: dream_summary` 卡片
+   （"已为你整理昨日 3 道错题，生成 5 张复习卡"）。
+5. 失败重试 ≤2 次，且禁止挤占白天服务资源（低优先级队列）。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | 禁止修改用户原始消息与原始错题内容（只新增/更新派生数据） |
+| 2 | 推送内容必须经内容审核；自动生成的复习卡需标"AI 生成" |
+| 3 | 未持锁执行整合 → 否决；整合任务出现在同步请求路径 → 否决 |
+
+### 4.3 工具延迟加载与搜索发现（P1）
+
+**需求说明**：
+1. **常驻工具集 ≤4 个**（按角色配置，如学生：ocr_extract/calculator/ask_user_question/sub_agent_dispatch），
+   其余工具标记 `deferred=true`，不进初始 System Prompt。
+2. 内置 `tool_search` 工具：按 name+description 关键词检索 deferred 工具，
+   命中后**当轮动态挂载**其 Schema，下轮自动卸载。
+3. 搜索索引构建时按角色过滤——该身份不可见的工具（如学生搜教师工具）不进索引。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | 角色不可见工具出现在搜索结果 → 否决（越权等价于护栏失效） |
+| 2 | 动态挂载仅当轮有效，禁止常驻化规避上下文控制 |
+| 3 | 常驻工具集 >4 需架构评审批准（上下文成本敏感性） |
+
+---
+
+## 五、分档四：工程基础设施
+
+### 5.1 分段 Checkpoint 观测（P1）
+
+**需求说明**：Agent Loop 各阶段打点计时，阶段枚举固定：
+`slim / compact / memory_prefetch / model_first_token / guardrail / tool_exec / docgen_wait / total`。
+每 run 的 timings JSONB 落 `agent_runs`；p95 超阈值告警（阈值配置化）。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | 埋点数据只含计时与计数，禁止携带消息内容/用户输入原文 |
+| 2 | 埋点开销 >5ms/run 视为缺陷 |
+
+### 5.2 Feature Gates 灰度（P2）
+
+**需求说明**：`feature_gates` 表（key / enabled / rollout_pct / allowlist），进程内缓存 60s；
+判定入参含 user_id 哈希分桶。新机制（speculation、新身份功能、新学科模型）默认 gate=off。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | 禁止用 `if env` 散落硬编码代替注册表 |
+| 2 | Gate 判定禁止绕过 RLS 与护栏链（gate 只管功能可见性，不管权限） |
+
+### 5.3 Output Styles 风格注册表（P2）
+
+**需求说明**：`output_styles` 表（grade_level + subject → tone_prompt），
+注入 System Prompt 固定区块 `<output_style>`；支持运营后台增改，热生效。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | 风格只影响表述方式，禁止影响事实正确性与内容审核标准 |
+| 2 | 风格模板禁止包含绕开护栏的指令（上线前需安全评审） |
+
+### 5.4 自动化 Hooks 与降级路径（P1）
+
+**需求说明**：
+1. **自动化 Hooks**：`automation_hooks` 表配置 `event → action`，首批事件
+   `mistake.created / plan.confirmed / dream.completed`，首批动作
+   `notify_parent / notify_teacher`；全部异步执行（Celery），失败不影响主流程。
+2. **降级路径声明**：每个多模态功能必须在配置中声明降级链——
+   语音对练 → 文本对练；拍照搜题 → 相册上传 → 手动输入题干；OCR 批改 → 手动框选。
+   服务故障时自动切换并**明示用户**（"语音服务暂不可用，已切换文本模式"）。
+
+**边界红线**：
+| # | 红线 |
+|---|------|
+| 1 | Hook 动作出现在同步请求路径 → 否决 |
+| 2 | 降级切换未明示用户 → 否决（禁止静默降级体验） |
+| 3 | 新增多模态功能未声明降级链 → 不予上线 |
+
+---
+
+## 六、SSE 事件协议增量（追加到编排层协议，枚举同样封闭）
+
+| event | data | 说明 |
+|-------|------|------|
+| `plan.outline` | `{seq, plan_id, version, outline}` | 大纲卡片（随 card 事件渲染） |
+| `plan.status` | `{seq, plan_id, status}` | 状态机迁移 |
+| `ask` | `{seq, ask_id, questions[]}` | 结构化提问；客户端回传 `ask_id + answers` |
+| `message.queued` / `message.dequeued` | `{seq, message_id, priority}` | 排队状态 |
+| `run.interrupted` | `{seq, reason}` | 打断通知 |
+| `tool.cancelled` | `{seq, tool_name}` | 工具已真实取消 |
+| `suggestions` | `{seq, items[3]}` | 追问推荐 |
+| `dream.summary` | `{seq, stats}` | 夜间整合摘要（次日首启） |
+
+**红线**：新增事件类型必须先更新本表与 AsyncAPI 定义，再写代码；禁止新增协议外字段。
+
+---
+
+## 七、数据库 DDL 增量（追加于编排层 DDL 之后）
+
+```sql
+-- 2.1 Plan Mode
+plan_documents (
+    id UUID PRIMARY KEY,
+    session_id UUID REFERENCES chat_sessions(id),
+    user_id UUID REFERENCES users(id),
+    skill_code VARCHAR(30),          -- ppt/lesson_plan/exam_paper/study_plan/analysis
+    version INTEGER DEFAULT 1,
+    outline JSONB NOT NULL,
+    status VARCHAR(20),              -- drafting/awaiting_confirm/confirmed/generating/completed/cancelled/expired
+    confirm_token_hash VARCHAR(64),  -- 仅存哈希
+    confirm_expires_at TIMESTAMP,
+    parent_plan_id UUID REFERENCES plan_documents(id), -- 修改产生的新版本指回旧版本
+    created_at TIMESTAMP,
+    confirmed_at TIMESTAMP
+);
+CREATE INDEX idx_plan_user ON plan_documents(user_id, created_at DESC);
+
+-- 2.5 Stop Hooks
+stop_hook_audits (
+    id UUID PRIMARY KEY,
+    run_id UUID REFERENCES agent_runs(id),
+    hook_name VARCHAR(50),           -- math_verify/grading_consistency/completeness_check
+    passed BOOLEAN,
+    detail JSONB,                    -- 失败原因、复核数据
+    forced_continue_count INTEGER,   -- 本次为第几次强制继续
+    created_at TIMESTAMP
+);
+
+-- 3.3 Denial Tracking
+denial_counters (
+    user_id UUID REFERENCES users(id),
+    target_code VARCHAR(50),
+    consecutive INTEGER DEFAULT 0,
+    total INTEGER DEFAULT 0,
+    updated_at TIMESTAMP,
+    PRIMARY KEY (user_id, target_code)
+);
+
+-- 3.4 Cost Tracker
+cost_ledger (
+    id UUID PRIMARY KEY,
+    run_id UUID REFERENCES agent_runs(id),
+    user_id UUID REFERENCES users(id),
+    model_route VARCHAR(50),
+    input_tokens INTEGER,
+    output_tokens INTEGER,
+    cache_hit_tokens INTEGER DEFAULT 0,
+    unit_price_snapshot JSONB,       -- {input_per_1k, output_per_1k, currency}
+    cost_cents INTEGER,
+    created_at TIMESTAMP
+);
+CREATE INDEX idx_cost_ledger_user_month ON cost_ledger(user_id, created_at);
+
+-- 4.1 PromptSuggestion
+suggestion_logs (
+    id UUID PRIMARY KEY,
+    session_id UUID REFERENCES chat_sessions(id),
+    user_id UUID REFERENCES users(id),
+    items JSONB,                     -- 3 条候选
+    clicked_index INTEGER,           -- 用户点了哪条，未点为 NULL
+    created_at TIMESTAMP
+);
+
+-- 4.2 DreamTask
+dream_runs (
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    phase VARCHAR(20),               -- orient/gather/consolidate/prune/completed/failed
+    stats JSONB,                     -- {mistakes_organized, cards_created, memories_updated}
+    retry_count INTEGER DEFAULT 0,
+    started_at TIMESTAMP,
+    finished_at TIMESTAMP
+);
+CREATE INDEX idx_dream_runs_user ON dream_runs(user_id, started_at DESC);
+
+-- 5.2 Feature Gates
+feature_gates (
+    key VARCHAR(50) PRIMARY KEY,
+    enabled BOOLEAN DEFAULT false,
+    rollout_pct INTEGER DEFAULT 0,   -- 0-100
+    allowlist UUID[],
+    updated_at TIMESTAMP
+);
+
+-- 5.3 Output Styles
+output_styles (
+    id UUID PRIMARY KEY,
+    grade_level VARCHAR(20),
+    subject VARCHAR(20),
+    tone_prompt TEXT NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    UNIQUE (grade_level, subject)
+);
+
+-- 5.4 Automation Hooks
+automation_hooks (
+    id UUID PRIMARY KEY,
+    owner_id UUID REFERENCES users(id),  -- 配置者（家长/教师）
+    event VARCHAR(40),                   -- mistake.created/plan.confirmed/dream.completed
+    action VARCHAR(40),                  -- notify_parent/notify_teacher
+    config JSONB,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP
+);
+
+-- RLS：含 user_id/owner_id 的表全部启用行级安全，策略同编排层
+-- （user_id = current_setting('app.user_id')::uuid）；
+-- feature_gates / output_styles 为全局只读表，不启用 RLS。
+```
+
+---
+
+## 八、非功能性指标（本扩展包，硬性）
+
+1. ask/plan 挂起与恢复 p95 < 500ms（不含用户等待时长）；
+2. Stop Hook 单校验器 ≤2s，整链 ≤4s；
+3. 工具摘要模板命中率 ≥80%；
+4. 长会话第三方 API 缓存命中 token 占比 ≥60%；
+5. DreamTask 单用户整合 ≤60s，全量批次在 3 小时窗口内完成；
+6. 追问推荐生成 ≤800ms，失败静默降级为不推荐（不影响主响应）；
+7. 埋点开销 <5ms/run。
+
+---
+
+## 九、红线总表（一票否决，评审逐项核对）
+
+| # | 红线 |
+|---|------|
+| 1 | 大纲未确认即投递生成任务 / 生成入参无 outline 快照 → 否决 |
+| 2 | 敏感决策超时自动放行 / 结构化提问退化为自由文本 → 否决 |
+| 3 | 取消指令未真实传递到执行层 → 否决 |
+| 4 | Todo 充当业务存储 / 多 in_progress 并存 → 否决 |
+| 5 | Stop Hook 无强制继续上限 / 校验器写业务表 → 否决 |
+| 6 | 压缩改前缀稳定区 / 缓存破坏无告警 → 否决 |
+| 7 | 摘要含用户隐私原文 → 否决 |
+| 8 | 拒绝计数用于限制用户主动功能 → 否决 |
+| 9 | 单价硬编码 / 成本明细暴露前端 / 记账阻断主流程 → 否决 |
+| 10 | 推荐未过审 / 跨会话挖掘 / speculation 默认开启 → 否决 |
+| 11 | DreamTask 改原始消息 / 未持锁并发 / 同步路径执行 → 否决 |
+| 12 | 角色不可见工具可被搜索到 / 动态挂载常驻化 → 否决 |
+| 13 | 埋点携带消息内容 → 否决 |
+| 14 | Gate 绕过 RLS 或护栏链 → 否决 |
+| 15 | 风格模板含绕护栏指令 / 多模态功能无降级链 → 否决 |
+
+---
+
+## 十、交付物要求（本提示词的输出标准）
+
+1. **完整代码骨架**（Python，可直接运行级别，全部落在 `backend/agent/` 子树）：
+   - `plan/`：Plan 状态机、确认 token、大纲快照传递、版本管理；
+   - `ask/`：ask_user_question 工具、Loop 挂起/恢复、超时分级策略；
+   - `queue/`：消息优先级队列、打断决策表、真实取消链路；
+   - `todo/`：todo_write 工具与快照落库；
+   - `stop_hooks/`：校验器注册表 + 3 个内置校验器（SymPy 复核、一致性、完整性）；
+   - `context/cache_aware.py`：前缀稳定区校验与缓存破坏检测；
+   - `tools/summary.py`：模板优先的摘要生成器；
+   - `denial/`、`cost/`、`suggest/`、`dream/`（四阶段 Celery 任务 + 分布式锁）、
+     `tools/search.py`（延迟加载）、`observe/checkpoint.py`、`gates/`、`styles/`、`hooks/`；
+2. **第七章全部 DDL**（含索引与 RLS 策略）；
+3. **SSE 协议增量的 AsyncAPI 定义**（与编排层协议合并成一份机器可读契约）；
+4. **Flutter 侧卡片协议说明**：plan_outline、ask、todo_list、dream_summary 四类新卡片的
+   字段契约与交互说明（不含完整 Flutter 代码，含关键 Widget 结构即可）；
+5. **测试策略与关键用例**（Pytest）：
+   - Plan：未确认投递生成任务必须被拒；confirm_token 跨用户/过期必须被拒；
+   - Ask：敏感决策超时按取消处理；每 run 第 3 次 ask 被拒绝；
+   - 打断：cancel 后断言模型请求中断、无后续计费 token；
+   - Stop Hook：注入错误数学答案断言被 math_verify 拦截并触发强制继续，连续 2 次后带 warning 交付；
+   - 缓存：改写前缀的压缩 PR 必须被检测测试拦截；
+   - Dream：锁冲突跳过；原始消息 diff 断言零改动；
+   - 工具搜索：学生身份搜索结果断言不含教师工具；
+6. **与编排层提示词的集成说明**：逐项列出对编排层既有模块（Loop、执行器、护栏链、
+   压缩管线、SSE）的改动点，明确"改动"与"新增"的边界。
+
+**技术栈强制约束**：同编排层提示词——Python 3.11+ / FastAPI / Celery + Redis /
+PostgreSQL 15 + pgvector / MinIO；与推理网关、多模态、文档生成、API 代理服务之间
+只允许 HTTP/gRPC 通信，禁止共享数据库连接、禁止共享代码包。

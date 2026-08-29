@@ -31,6 +31,9 @@
 │   ├── postgres/init.sql   # 完整 DDL + pgvector + 索引 + RLS
 │   └── nginx/nginx.conf    # 反向代理（SSL 终止/负载均衡）
 ├── docs/                   # 架构与 API 文档
+│   ├── prompts/            # Master Prompt 设计文档
+│   └── security/           # 安全审计报告（md 人读 + json 机读）
+├── releases/               # 分发构建产物（APK/AAB，已 gitignore）
 ├── docker-compose.yml
 └── .env.example
 ```

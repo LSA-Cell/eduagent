@@ -22,6 +22,11 @@ mobile/ios/.symlinks/
 *.pem
 *.key
 
+# Android release signing（私钥与口令永不入库）
+mobile/android/key.properties
+*.jks
+*.keystore
+
 # IDE
 .idea/
 .vscode/
@@ -30,3 +35,6 @@ mobile/ios/.symlinks/
 
 # Data volumes
 infra/data/
+
+# 分发构建产物（APK/AAB 二进制不入库）
+releases/

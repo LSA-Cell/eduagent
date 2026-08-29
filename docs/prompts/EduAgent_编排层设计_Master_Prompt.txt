@@ -1,0 +1,457 @@
+# EduAgent —— Agent 编排层设计 Master Prompt（子模块专用提示词）
+
+> **本文件定位**：本文档是《EduAgent 教育领域移动端 AI Agent APP 全栈开发 Master Prompt》第三章 B 节
+> 「Agent 编排服务」的**深化替换版**。前端（Flutter）、推理网关、多模态服务、API 代理、文档生成服务、
+> 数据库主表结构等仍以主提示词为准；凡涉及编排层内部实现，**以本文件为准**。
+>
+> **设计蓝本**：编排层参考 Claude Code（终端 AI 编程 Agent）的 Agent 架构思想——
+> 异步生成器 Agent Loop、三层状态分离、工具元数据自描述、只读/写并发分批、子 Agent 即工具、
+> 四级上下文压缩、记忆并发预取、allow/ask/deny 权限决策链、Skill 注册表——
+> 并将其从"单进程本地 CLI"**翻译为"FastAPI 异步微服务 + Celery 异步任务 + PostgreSQL/pgvector/Redis/MinIO"的服务端形态**。
+> 禁止照搬其终端 UI、git worktree 隔离、本地文件记忆（memdir）、进程内 Task 系统等 CLI 专属设计。
+
+---
+
+## 一、编排层总体架构
+
+### 1.1 职责定义
+
+Agent 编排服务是 EduAgent 的"大脑皮层"，**唯一职责**是：接收聊天请求 → 组织上下文与记忆 →
+驱动 Agent Loop（调模型 → 执行工具 → 回注结果的循环）→ 通过 SSE 向移动端推流 → 产出审计记录。
+
+它**不包含**：模型推理（推理网关）、OCR/ASR/TTS/文档解析（多模态服务）、PPTX/DOCX/PDF 排版渲染
+（文档生成服务）、用户 API Key 加解密与转发（API 代理服务）、HTTP 鉴权与限流（BFF）。
+
+### 1.2 核心机制清单（必须全部实现）
+
+| # | 机制 | 一句话说明 | 对应章节 |
+|---|------|-----------|---------|
+| 1 | Agent Loop 异步生成器 | `while True` 循环驱动"模型→工具→回注"，全程 SSE 推流 | 3.1 |
+| 2 | Config / State / Deps 三层状态 | 入循环快照不可变 / 逐轮可变 / I/O 依赖注入可测 | 3.1 |
+| 3 | EduTool 工具协议 | Pydantic Schema + 元数据自描述（只读/并发安全/破坏性或角色门槛） | 3.2 |
+| 4 | 工具并发分批 | 连续只读工具并发执行，写工具串行 | 3.2 |
+| 5 | 工具结果瘦身 | 超阈值结果存 MinIO，模型只见摘要 + URL | 3.2 |
+| 6 | 子 Agent 即工具 | 独立上下文 + 裁剪工具池 + 学科模型路由；长任务桥接 Celery | 3.3 |
+| 7 | 四级上下文压缩管线 | 结果瘦身 → microcompact → autocompact → 报错响应式压缩 | 3.4 |
+| 8 | 记忆并发预取注入 | pgvector 检索与首 Token 流式请求并发，不阻塞延迟 | 3.5 |
+| 9 | 护栏决策链 | 内容审核 → 角色校验 → 配额 → 家长模式，返回 allow/ask/deny | 3.6 |
+| 10 | Skill 注册表 | 16 个教育工具栏工具 = 16 个 Skill 包，按身份过滤下发 | 3.7 |
+| 11 | 统一 SSE 事件协议 | 所有前端推送走统一事件契约，支持断线重放 | 第四章 |
+
+### 1.3 数据流（固定顺序，禁止重排）
+
+```
+Flutter ──HTTP──> BFF（鉴权/限流）──> 编排服务
+  编排服务内部：
+    ① 加载会话消息（PostgreSQL）
+    ② 构建 TurnConfig 快照（学科/年级/身份/模型路由）
+    ③ 启动记忆预取任务（asyncio.create_task，与后续模型请求并发）
+    ④ 进入 Agent Loop：
+        a. 工具结果瘦身（旧 OCR/解析结果 → MinIO 摘要）
+        b. 压缩检查（microcompact → autocompact）
+        c. 等待记忆预取完成 → 注入 System Prompt
+        d. 经推理网关流式调模型 ──> SSE 直推 Flutter（打字机）
+        e. 收集工具调用 → 逐个过护栏链 → 分批执行（只读并发/写串行）
+        f. 工具结果回注消息历史；卡片事件随 SSE 推送
+        g. 无工具调用 → 跳出循环；否则回到 a
+    ⑤ 落库：消息、tool_call 审计、agent_run 汇总
+    ⑥ 异步触发：错题提取、记忆构建（Celery，不阻塞响应）
+```
+
+---
+
+## 二、技术栈边界（强制不可越界 · 红线表）
+
+| 组件 | 技术选型 | 职责边界 | 禁止行为（红线） |
+|------|---------|---------|----------------|
+| **Agent Loop** | Python 3.11+ async generator（FastAPI 进程内） | 驱动模型-工具循环；维护消息历史；产出 SSE 事件；执行恢复路径 | ① 禁止直接访问 vLLM/GPU 进程或第三方模型 API，**只能经推理网关客户端（Deps 注入）**；② 禁止在 Loop 体内执行工具以外的业务写库（消息/事件落库除外）；③ 禁止无界循环——必须有 MAX_TURNS 与 Token 预算双上限；④ 禁止在 Loop 内做内容排版、OCR、Key 处理 |
+| **TurnConfig** | Pydantic BaseModel（frozen=True） | 入循环时快照一次：user_id、学科、年级、身份角色、模型路由、配额参数 | 禁止循环内任何代码修改 Config；需要变更必须终止当前 Loop 重新发起 |
+| **TurnState** | 普通可变 dataclass | 逐轮可变：messages、turn_count、压缩追踪、待回执卡片 | 禁止跨请求共享 State 实例（无全局可变状态，防止多用户串数据） |
+| **Deps** | 依赖注入协议（Protocol 类） | 封装全部 I/O：推理网关客户端、RAG 检索、DB 会话工厂、Celery 投递、MinIO 客户端 | ① 禁止在 Loop/工具内直接 `import` 具体 I/O 实现（必须经 Deps 注入，保证单测可替换）；② 禁止在 Deps 上新增"便利业务方法"，只允许原子 I/O |
+| **工具执行器** | asyncio | 分批、并发、超时、结果瘦身、审计落库 | ① 仅当工具同时声明 `is_read_only=True` 且 `is_concurrency_safe=True` 才允许并发，否则一律串行；② 禁止并发批次内出现写工具；③ 单工具超时必须 ≤ 工具声明的 timeout_s，超时按失败回注而非挂起 Loop |
+| **子 Agent 运行器** | 进程内递归 Loop / Celery Worker | 同步短任务进程内跑；长任务（PPT/教案/试卷/批改/学情）投递 Celery | ① 子 Agent 工具池**只允许是注册表白名单的子集**，禁止继承父 Agent 全量工具；② 禁止子 Agent 读取父会话完整历史，只传构造好的必要上下文；③ 预估 >3s 的子任务禁止同步执行（落实主提示词红线） |
+| **压缩管线** | Python + 推理网关（摘要生成） | 只作用于**消息历史** | ① 禁止压缩/改写/删除 mistake_records、flashcards、study_plans 等结构化表数据；② autocompact 摘要生成失败时禁止裸丢消息，必须走响应式压缩或直接报错终止本 turn |
+| **记忆子系统** | pgvector + Redis 缓存 | 检索当前用户记忆并注入 System Prompt；异步提取新记忆 | ① 禁止跨用户检索——所有查询必须带 user_id 且经 RLS；② 预取禁止阻塞首 Token（必须并发）；③ 记忆提取（Celery）失败禁止影响主会话 |
+| **护栏链** | Python 中间件链 | 对每个工具调用产出 allow/ask/deny 决策 | ① 禁止任何工具调用绕过护栏链（执行器入口强制调用）；② 内容审核服务不可用时必须 **fail-closed（deny）**，禁止 fail-open 放行；③ 决策结果与理由必须落审计表 |
+| **Skill 注册表** | PostgreSQL 表 + YAML 内置包 | 工具栏工具的定义、身份过滤、表单 Schema 下发 | ① 禁止把 Skill 提示词模板硬编码进代码文件（必须注册表化，支持热更新）；② 禁止向前端下发该身份不可用的 Skill |
+| **SSE 事件通道** | FastAPI StreamingResponse（text/event-stream） | 统一事件协议；序列号单调递增；支持 Last-Event-ID 重放 | ① 禁止向前端推送未经卡片协议转换的原始工具 JSON；② 禁止在事件体中携带任何内部路径、堆栈、密钥；③ 事件序列号必须持久化（Redis），断线 30s 内可重放 |
+
+---
+
+## 三、核心组件设计规范
+
+### 3.1 Agent Loop（edu_agent_loop）
+
+**结构要求**：异步生成器，签名固定为
+`async def edu_agent_loop(req: ChatRequest, deps: Deps) -> AsyncIterator[SSEEvent]`。
+
+**循环内步骤顺序固定**（对应第一章数据流 ④a–④g，禁止调换）：
+瘦身 → 压缩检查 → 记忆注入 → 流式调模型 → 护栏链 → 分批执行工具 → 回注 → 判断退出。
+
+**恢复路径（必须实现三条）**：
+
+| 异常 | 恢复行为 | 熔断条件 |
+|------|---------|---------|
+| 模型返回 max_output_tokens | 自动续写，最多连续 3 次 | 超 3 次以部分结果收尾并告知用户 |
+| 推理网关返回 prompt_too_long | 触发响应式压缩（reactive compact）后重试 1 次 | 重试仍失败 → 终止 turn，提示用户开启新会话 |
+| 压缩/工具连续失败 | 同类失败连续 3 次熔断 | 熔断后返回可读错误卡片，禁止静默重试烧 Token |
+
+**事件与可观测**：每次 Loop 运行生成一条 `agent_runs` 记录；每个 turn 记录 token 用量、
+工具调用数、压缩事件；所有事件带 `run_id` + 单调递增 `seq`。
+
+**红线**：Loop 内禁止出现 `time.sleep` 式阻塞；禁止在生成器 `yield` 之间执行超过 100ms 的同步 CPU 操作
+（大 JSON 处理丢 `asyncio.to_thread`）；Loop 总时长、turn 数、Token 预算三上限缺一不可。
+
+### 3.2 EduTool 工具协议与注册表
+
+**协议定义（Pydantic，等价 Claude Code 的 Tool 接口）**：
+
+```python
+class EduTool(Protocol):
+    name: str                      # 全局唯一，snake_case
+    description: str               # 给模型看的一句话能力描述
+    input_model: type[BaseModel]   # 入参 Schema（等价 Zod schema）
+    is_read_only: bool = False     # 缺省按"写"处理（保守默认，强制显式声明）
+    is_concurrency_safe: bool = False
+    role_required: str | None = None      # "teacher" 时仅教师可见/可调
+    max_result_chars: int = 20_000        # 超限 → 存 MinIO + 摘要替换
+    timeout_s: int = 10
+    card_type: str | None = None          # 前端卡片类型枚举
+    deferred: bool = False                # 低频工具不进初始 prompt，靠工具检索发现
+    async def call(self, args: BaseModel, ctx: ToolContext) -> ToolResult: ...
+```
+
+**工具返回契约**：
+
+```python
+class ToolResult(BaseModel):
+    content: str                    # 给模型看的文本（已瘦身）
+    card_type: str | None = None    # grading / ppt_preview / lesson_plan_preview /
+                                    # exam_preview / plan_card / analysis_report / flashcard_group
+    card_data: dict | None = None   # 前端卡片结构化数据
+    file_urls: list[str] = []       # MinIO 预签名 URL（过期 ≤1 小时）
+```
+
+**内置工具清单（首批必须实现 8 个）**：`calculator`、`equation_solver`、`web_search`、
+`knowledge_graph_query`、`mistake_recorder`（写）、`flashcard_generator`、
+`ocr_extract`（调用多模态服务）、`sub_agent_dispatch`（子 Agent 派发，见 3.3）。
+教师专属（role_required="teacher"）：`ppt_generator`、`lesson_plan_generator`、
+`exam_paper_generator`、`learning_analysis`——这 4 个只允许以子 Agent 方式经 `sub_agent_dispatch` 触达。
+
+**并发分批规则**：按模型输出顺序扫描工具调用，连续且均满足
+`is_read_only && is_concurrency_safe` 的划入同一并发批（`asyncio.gather`，单批上限 5）；
+遇到写工具立即切批，写工具单独串行执行。
+
+**结果瘦身规则**：`len(result.content) > max_result_chars` 时，
+全文存 MinIO（bucket: `tool-results/`，键含 run_id），`content` 替换为
+"摘要（≤500 字）+ 预签名 URL + 全文长度"；原始全文**禁止**再进入消息历史。
+
+**红线**：① 未声明完整元数据的工具禁止注册（启动期校验，缺一即拒绝加载）；
+② 工具内禁止硬编码模型名/模型地址（模型路由只能来自 TurnConfig 或子 Agent 注册表）；
+③ 工具副作用（写库/写文件/发请求）必须在 docstring 中声明，只读工具出现写副作用视为线上事故。
+
+### 3.3 子 Agent 编排
+
+**定义方式**：YAML 注册表 + 数据库表双写（YAML 为内置基线，DB 支持运行时增改），Schema 固定：
+
+```yaml
+name: grading_agent                 # 唯一标识
+description: 作业批改：圈错、正解、知识点归因
+subject_routing:                    # 学科 → 推理网关模型名（路由请求必须经推理网关）
+  math: edu-math-7b
+  default: edu-general-14b
+tools_allowlist: [ocr_extract, calculator, equation_solver, mistake_recorder]
+async_via: celery                   # none=进程内同步；celery=投递异步任务
+timeout_s: 30
+card_type: grading
+input_form:                         # 前端底部 Sheet 表单 Schema（可选）
+  - {field: subject, type: select, required: true}
+```
+
+**内置子 Agent（首批 4 个）**：`grading_agent`（批改）、`ppt_agent`（课件）、
+`lesson_plan_agent`（教案）、`exam_paper_agent`（组卷）——四者全部 `async_via: celery`；
+`oral_scoring_agent`（口语评分）可为同步。
+
+**执行规则**：
+- 同步子 Agent：进程内递归调用 `edu_agent_loop`，**独立 messages、独立 run_id、裁剪工具池、
+  可覆盖模型路由**，结果以单个 ToolResult 返回父 Loop；
+- 异步子 Agent：投递 Celery → 立即返回"任务受理卡片"（含 task_id）→ Worker 完成后写库并
+  经 WebSocket/SSE 推送完成事件与文件 URL；
+- 父子间**只传结构化参数与必要上下文**，禁止传递完整会话历史；
+- 子 Agent 失败必须回注结构化错误（可重试/可降级文案），禁止异常冒泡中断父 Loop。
+
+**红线**：① 子 Agent 禁止再派生孙 Agent（最大深度 2）；② 注册表之外的工具禁止出现在
+子 Agent 上下文；③ Celery 任务必须幂等（以 task_id 去重），重复完成事件禁止重复写库。
+
+### 3.4 上下文压缩管线（四级，顺序固定）
+
+| 级别 | 名称 | 触发条件 | 行为 |
+|------|------|---------|------|
+| L1 | 工具结果瘦身 | 每轮循环开头，按 tool_use_id 定位 | 超过 7 天或超过 N 轮前的 OCR/解析全文 → MinIO 摘要替换 |
+| L2 | microcompact | 每轮循环开头 | 只保留最近 K 个工具结果全文，更早的替换为一行摘要占位 |
+| L3 | autocompact | 估算 token ≥（模型窗口 − 13k buffer） | 调推理网关生成整段摘要，压缩点之后保留原文，写入压缩边界标记 |
+| L4 | reactive compact | 收到 prompt_too_long 错误 | 立即压缩后重试 1 次（全 turn 仅 1 次机会） |
+
+**保护清单（压缩禁区）**：当前 turn 的消息、最近一次工具结果全文、
+注入的记忆区块、`mistake_records`/`flashcards`/`study_plans` 等结构化表数据（它们根本不进消息历史）。
+
+**红线**：① 四级顺序禁止颠倒；② 压缩前后必须记录 `context_compactions` 审计行
+（tokens_before/after、级别、摘要）;③ 禁止为省 token 压缩掉用户明确标记"收藏/重要"的消息。
+
+### 3.5 记忆预取与注入
+
+**并发要求**：收到请求后立即 `asyncio.create_task(prefetch_memories(...))`，
+与 L1/L2 处理、模型首 Token 请求并发；仅在组装 System Prompt 前 await，超时 300ms 降级为空注入。
+
+**检索内容**：① 显式记忆（学习偏好、目标）；② 薄弱知识点 Top5（知识点掌握图谱）；
+③ 未来 24h 到期的错题/记忆卡片复习项（艾宾浩斯 `next_review_at`）；④ 当前学科相关 RAG 片段（可选）。
+
+**注入格式**：System Prompt 尾部固定区块 `<learner_memory>...</learner_memory>`，
+总量 ≤ 800 token，超限按优先级截断。
+
+**红线**：① 所有检索强制 `user_id = 当前用户` + RLS，禁止跨用户；② 记忆内容禁止包含
+他人数据、API Key、原始身份证明文件；③ 新记忆提取（Celery 异步）失败禁止阻塞或重试主会话。
+
+### 3.6 护栏决策链（Guardrail Chain）
+
+**决策模型**：每个工具调用执行前依次过链，任一环节返回非 allow 即短路：
+
+```
+① 内容审核（教育场景不当内容过滤，注意不得误伤生物/医学正常术语）
+② 角色校验（role_required 与用户身份匹配，教师专属校验 is_teacher）
+③ 配额校验（按身份档：免费/付费/教师；含第三方 API 预算）
+④ 家长模式校验（未成年人账户触达开放类工具如 web_search 时 → ask）
+   → 决策 ∈ {allow, ask, deny}
+```
+
+**ask 的处理**：向前端推送 `guardrail.ask` 事件，Loop 挂起等待确认（超时 120s 按 deny 处理）；
+家长模式的 ask 路由到家长端确认通道。
+
+**红线**：① 执行器入口强制过链，代码上不存在"免检通道"；② 审核服务故障一律 fail-closed；
+③ 每条决策落 `guardrail_decisions` 表（环节、决策、理由）；④ 护栏链代码禁止依赖工具内部状态。
+
+### 3.7 Skill 注册表与工具栏映射
+
+**映射关系**：Flutter 工具栏 16 个工具（拍照答疑/作业批改/文档解析/口语对练/公式助手/化学方程式/
+知识点检测/学习计划/错题本/记忆卡片/作文辅导/联网搜索/制作 PPT/制作教案/生成试卷/学情分析）
+= 16 条 Skill 注册表记录，每条含：`code、name、icon、roles[]、prompt_template、
+input_form_schema、card_type、sort_order、is_active`。
+
+**下发契约**：`GET /v1/skills/toolbar?role=student|teacher|parent` 返回该身份可见、
+按 sort_order 排序的 Skill 列表；前端工具栏折叠态前 4 个、展开态网格均以此为准。
+
+**行为绑定**：Skill 被触发后 = 「固定提示词前缀 + 表单参数 +（可选）文件/图片」组装成用户消息
+进入 Agent Loop；Skill 只是"结构化入口"，**不是绕过 Loop 的独立通道**。
+
+**红线**：① 提示词模板注册表化，禁止散落硬编码；② 身份过滤在服务端完成，前端过滤仅作 UX；
+③ 新增 Skill 只需插表 +（可选）新工具注册，禁止为此改动 Loop 代码。
+
+---
+
+## 四、SSE 事件协议（统一契约）
+
+`POST /v1/chat/stream` → `text/event-stream`，事件类型枚举固定如下，**禁止新增协议外字段**：
+
+| event | data | 说明 |
+|-------|------|------|
+| `run.start` | `{run_id, seq, session_id}` | 每次 Loop 启动 |
+| `message.delta` | `{seq, text}` | 模型流式增量（打字机） |
+| `tool.start` | `{seq, tool_name, display_name}` | 工具开始执行（前端显示"正在使用 X..."） |
+| `tool.progress` | `{seq, tool_name, percent?, note?}` | 长任务进度（异步子 Agent 经此推送） |
+| `card` | `{seq, card_type, card_data, file_urls}` | 工具结果卡片（按 card_type 渲染） |
+| `guardrail.ask` | `{seq, tool_name, question, confirm_token}` | 需确认；客户端回传确认后 Loop 继续 |
+| `memory.used` | `{seq, memory_ids[]}` | 本 turn 注入了哪些记忆（可审计、可关闭） |
+| `error` | `{seq, code, message}` | 可读错误（禁止堆栈/内部路径） |
+| `run.end` | `{seq, finish_reason, usage}` | 正常结束/熔断/中断 |
+
+**重连重放**：`seq` 单调递增并随事件持久化至 Redis（TTL 5 分钟）；
+客户端重连带 `Last-Event-ID`，服务端重放其后事件；超过窗口由客户端拉取消息全量兜底。
+
+---
+
+## 五、目录结构（编排服务子树，Mono-repo 内）
+
+```
+backend/agent/
+├── app/
+│   ├── main.py                  # FastAPI 装配（只装配，无业务）
+│   ├── api/                     # chat_stream.py / skills.py / confirms.py
+│   ├── core/                    # config.py / deps.py（Deps 协议与生产实现）
+│   ├── loop/                    # agent_loop.py / turn_state.py / turn_config.py
+│   │                            # / recovery.py / partition.py
+│   ├── tools/                   # base.py / registry.py / executor.py
+│   │   └── builtin/             # calculator.py / equation_solver.py / web_search.py
+│   │                            # / knowledge_graph_query.py / mistake_recorder.py
+│   │                            # / flashcard_generator.py / ocr_extract.py / sub_agent_dispatch.py
+│   ├── subagents/               # runner.py / celery_bridge.py / loader.py
+│   │   └── definitions/         # grading_agent.yaml / ppt_agent.yaml / ...（4+1 个）
+│   ├── context/                 # slim.py / microcompact.py / autocompact.py
+│   │                            # / reactive.py / token_budget.py
+│   ├── memory/                  # prefetch.py / inject.py
+│   ├── guardrails/              # chain.py / moderation.py / role.py / quota.py / parental.py
+│   ├── skills/                  # loader.py / builtin_skills.yaml（16 条）
+│   ├── events/                  # sse.py / protocol.py / replay.py
+│   └── audit/                   # tool_calls.py / runs.py / decisions.py
+├── workers/
+│   ├── celery_app.py
+│   └── tasks/                   # grading.py / generate_ppt.py / generate_lesson_plan.py
+│                                # / generate_exam.py / memory_extract.py / mistake_extract.py
+└── tests/                       # 见第八章测试策略
+```
+
+**边界红线**：`backend/agent/` 内任何模块禁止 `import` 下列对象——
+vLLM/模型 SDK 直连客户端、OCR/ASR/TTS 实现、`python-pptx`/`python-docx`/`reportlab`、
+API Key 加解密例程。它们分属推理网关、多模态、文档生成、API 代理服务，只能经 HTTP/gRPC 调用。
+
+---
+
+## 六、数据库 DDL 增量（编排层专用表，追加到主提示词 DDL 之后）
+
+```sql
+-- Agent Loop 运行记录
+agent_runs (
+    id UUID PRIMARY KEY,
+    session_id UUID REFERENCES chat_sessions(id),
+    user_id UUID REFERENCES users(id),
+    turn_count INTEGER DEFAULT 0,
+    model_route VARCHAR(50),
+    status VARCHAR(20),            -- running/completed/failed/circuit_broken
+    token_usage JSONB,             -- {input, output, by_turn: []}
+    started_at TIMESTAMP,
+    finished_at TIMESTAMP
+);
+CREATE INDEX idx_agent_runs_session ON agent_runs(session_id, started_at DESC);
+
+-- 工具调用审计
+tool_call_audits (
+    id UUID PRIMARY KEY,
+    run_id UUID REFERENCES agent_runs(id),
+    tool_name VARCHAR(50),
+    input JSONB,
+    decision VARCHAR(10),          -- allow/ask/deny（护栏链结果）
+    latency_ms INTEGER,
+    result_size INTEGER,
+    card_type VARCHAR(30),
+    created_at TIMESTAMP
+);
+CREATE INDEX idx_tool_audits_run ON tool_call_audits(run_id);
+
+-- 子 Agent 注册表
+sub_agent_definitions (
+    name VARCHAR(50) PRIMARY KEY,
+    description TEXT,
+    subject_routing JSONB,         -- {math: "edu-math-7b", default: "edu-general-14b"}
+    tools_allowlist TEXT[],
+    async_via VARCHAR(10),         -- none/celery
+    timeout_s INTEGER DEFAULT 30,
+    card_type VARCHAR(30),
+    input_form JSONB,
+    version INTEGER DEFAULT 1,
+    is_active BOOLEAN DEFAULT true
+);
+
+-- Skill 注册表（工具栏）
+skill_definitions (
+    code VARCHAR(30) PRIMARY KEY,  -- photo_solve/grading/doc_parse/oral_practice/...
+    name VARCHAR(50),
+    icon VARCHAR(10),
+    roles TEXT[],                  -- {student,teacher,parent}
+    prompt_template TEXT,
+    input_form_schema JSONB,
+    card_type VARCHAR(30),
+    sort_order INTEGER,
+    is_active BOOLEAN DEFAULT true
+);
+
+-- 压缩审计
+context_compactions (
+    id UUID PRIMARY KEY,
+    session_id UUID REFERENCES chat_sessions(id),
+    level VARCHAR(20),             -- slim/microcompact/autocompact/reactive
+    tokens_before INTEGER,
+    tokens_after INTEGER,
+    summary TEXT,
+    boundary_message_id UUID REFERENCES messages(id),
+    created_at TIMESTAMP
+);
+
+-- 护栏决策审计
+guardrail_decisions (
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    run_id UUID REFERENCES agent_runs(id),
+    tool_name VARCHAR(50),
+    stage VARCHAR(20),             -- moderation/role/quota/parental
+    decision VARCHAR(10),          -- allow/ask/deny
+    reason TEXT,
+    created_at TIMESTAMP
+);
+
+-- RLS：以上含 user_id 的表全部启用行级安全，策略为 user_id = current_setting('app.user_id')::uuid；
+-- sub_agent_definitions / skill_definitions 为全局只读表，不启用 RLS。
+```
+
+---
+
+## 七、非功能性指标（编排层，硬性）
+
+1. 记忆预取 p95 < 300ms，且**不增加首 Token 延迟**（并发验证有测试）；
+2. Loop 单 turn 自身开销（不含模型与工具执行）p95 < 100ms；
+3. 只读工具并发批相对串行的 p95 收益 ≥ 30%；
+4. autocompact 触发时首 Token 增量 < 2s；
+5. SSE 断线 30s 内重放完整率 100%；
+6. 单会话默认 MAX_TURNS = 20、Token 预算可按身份档配置；
+7. 护栏链单次决策 p95 < 150ms（内容审核走推理网关小模型）。
+
+---
+
+## 八、代码红线总表（一票否决，评审逐项核对）
+
+| # | 红线 |
+|---|------|
+| 1 | 编排服务内出现 vLLM/模型 API 直连代码 → 否决（必须经推理网关） |
+| 2 | 同步接口内出现 >3s 阻塞调用且未走 Celery → 否决 |
+| 3 | 工具未声明完整元数据即注册 → 否决（启动校验必须拦截） |
+| 4 | 写工具进入并发批 → 否决 |
+| 5 | 超限工具结果全文回注消息历史（未走 MinIO 瘦身） → 否决 |
+| 6 | 压缩管线触碰结构化业务表数据 → 否决 |
+| 7 | 工具调用绕过护栏链 / 审核故障 fail-open → 否决 |
+| 8 | 记忆/RAG 检索缺 user_id 过滤或绕过 RLS → 否决 |
+| 9 | 子 Agent 继承全量工具池 / 读取父会话完整历史 / 派生孙 Agent → 否决 |
+| 10 | Loop 无 MAX_TURNS / 无 Token 预算 / 存在全局可变 TurnState → 否决 |
+| 11 | 向前端推送原始工具 JSON、堆栈、内部路径、任何密钥 → 否决 |
+| 12 | API Key 明文出现在编排服务代码、日志、内存对象、审计表 → 否决 |
+| 13 | Skill/子 Agent 提示词硬编码进 .py 文件 → 否决（必须注册表化） |
+| 14 | 编排服务 import python-pptx/python-docx/OCR/ASR 库 → 否决（属其他服务） |
+| 15 | 工具调用未落审计表 → 否决 |
+
+---
+
+## 九、交付物要求（本提示词的输出标准）
+
+基于以上规范，生成：
+
+1. **完整目录骨架**：按第五章结构生成可运行的 FastAPI + Celery 服务（含依赖清单）；
+2. **核心代码实现**（Python，可直接运行级别）：
+   - `loop/agent_loop.py`：含三层状态、固定流水线、三条恢复路径、熔断；
+   - `tools/base.py` + `registry.py` + `executor.py`：协议、启动期元数据校验、并发分批执行器；
+   - 8 个内置工具实现骨架（外部依赖以 Deps 接口隔离，可注入 fake）；
+   - `subagents/`：YAML loader、同步递归运行器、Celery 桥接（含幂等去重）；
+   - `context/`：四级压缩管线 + token 估算；
+   - `memory/prefetch.py`：并发预取 + 超时降级 + 注入格式化；
+   - `guardrails/chain.py`：四环节链 + fail-closed + 审计落库；
+   - `events/`：SSE 协议、序列号、Redis 重放；
+   - 第六章全部 DDL（含索引与 RLS 策略）；
+3. **AsyncAPI 规范**：SSE 事件协议的机器可读定义；
+4. **测试策略与关键用例**（Pytest）：
+   - Loop 单测：注入 fake Deps（假模型流、假工具），断言事件序列与恢复路径；
+   - 并发分批：构造只读/写混合调用序列，断言批次划分与串并行正确性；
+   - 护栏链：审核服务宕机时断言 deny（fail-closed）；越权调用教师工具断言 deny；
+   - 压缩管线：构造超长会话，断言四级触发顺序与保护清单不被触碰；
+   - SSE 重放：模拟断线，断言 seq 续传无重复无丢失；
+   - 记忆注入：断言并发预取不阻塞首 Token（计时断言）；
+5. **Docker Compose 片段**：agent 服务 + worker 接入主提示词既有编排（网络隔离沿用主提示词规范）。
+
+**技术栈强制约束**：Python 3.11+ / FastAPI / Celery + Redis / PostgreSQL 15 + pgvector / MinIO。
+编排层不得引入超出此范围的运行时依赖；与推理网关、多模态、文档生成、API 代理服务之间
+只允许 HTTP/gRPC 通信，禁止共享数据库连接、禁止共享代码包。
