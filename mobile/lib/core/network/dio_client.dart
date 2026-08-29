@@ -7,16 +7,22 @@ import '../storage/secure_storage.dart';
 
 /// 统一 API 异常
 class ApiException implements Exception {
-  const ApiException(this.message, {this.statusCode});
+  const ApiException(this.message, {this.statusCode, this.code});
 
   final String message;
   final int? statusCode;
 
+  /// 服务端错误码（如 captcha_required / account_locked），无则为 null
+  final String? code;
+
   factory ApiException.fromDio(DioException e) {
     final status = e.response?.statusCode;
-    final serverMsg = e.response?.data is Map<String, dynamic>
-        ? (e.response!.data as Map<String, dynamic>)['message'] as String?
+    final data = e.response?.data;
+    final serverMsg = data is Map<String, dynamic>
+        ? data['message'] as String?
         : null;
+    final serverCode =
+        data is Map<String, dynamic> ? data['code'] as String? : null;
     final message = switch (e.type) {
       DioExceptionType.connectionTimeout ||
       DioExceptionType.sendTimeout ||
@@ -25,7 +31,7 @@ class ApiException implements Exception {
       DioExceptionType.connectionError => '网络连接失败，请检查网络',
       _ => serverMsg ?? '服务异常（${status ?? '未知'}）',
     };
-    return ApiException(message, statusCode: status);
+    return ApiException(message, statusCode: status, code: serverCode);
   }
 
   @override

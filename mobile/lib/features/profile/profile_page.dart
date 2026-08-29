@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
+import '../../core/network/api/auth_api.dart';
 import '../../core/network/api/teacher_api.dart';
 import '../../core/network/api/tool_api.dart';
 import '../../core/network/api/user_api.dart';
+import '../../core/network/dio_client.dart';
 import '../../core/storage/local_db.dart';
 import '../../core/storage/secure_storage.dart';
 import '../../models/user.dart';
@@ -60,7 +62,14 @@ class ProfilePage extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(user?.nickname ?? '未登录',
+                      Text(
+                          user == null
+                              ? '未登录'
+                              : (user.isGuest
+                                  ? '游客'
+                                  : (user.nickname.isEmpty
+                                      ? '已登录用户'
+                                      : user.nickname)),
                           style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 4),
                       Container(
@@ -72,7 +81,7 @@ class ProfilePage extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          _modeLabel(mode),
+                          user?.isGuest == true ? '游客' : _modeLabel(mode),
                           style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -229,6 +238,65 @@ class ProfilePage extends ConsumerWidget {
                 ),
           ),
 
+          // 游客提示：绑定手机号转正（数据保留）或登录已有账号
+          if (user?.isGuest == true) ...[
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('游客模式',
+                        style: Theme.of(context).textTheme.titleSmall),
+                    const SizedBox(height: 6),
+                    Text('绑定手机号可保留当前学习数据，并可在其他设备登录',
+                        style: Theme.of(context).textTheme.bodySmall),
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      onPressed: () => _showUpgradeSheet(context, ref),
+                      icon: const Icon(Icons.phone_iphone, size: 18),
+                      label: const Text('绑定手机号'),
+                    ),
+                    TextButton(
+                      onPressed: () => context.push('/login'),
+                      child: const Text('已有账号？去登录'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          // 正式账号：账号安全（修改密码 / 设备管理）
+          if (user != null && !user.isGuest) ...[
+            const SizedBox(height: 12),
+            _SectionCard(
+              title: '账号安全',
+              child: Column(
+                children: [
+                  ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.lock_reset, size: 20),
+                    title: const Text('修改密码'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _showChangePasswordDialog(context, ref),
+                  ),
+                  ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.devices, size: 20),
+                    title: const Text('设备管理'),
+                    subtitle: const Text('查看并踢掉其他登录设备'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _showDevicesSheet(context, ref),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           // 教师认证
           if (mode == UserMode.teacher) ...[
             const SizedBox(height: 12),
@@ -241,7 +309,7 @@ class ProfilePage extends ConsumerWidget {
                   height: 38,
                   decoration: BoxDecoration(
                     color: user?.teacherVerified == true
-                        ? Colors.green.withValues(alpha: 0.12)
+                        ? AppPalette.sage.withValues(alpha: 0.12)
                         : scheme.surfaceContainerHighest
                             .withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(AppTokens.radiusMd),
@@ -252,7 +320,7 @@ class ProfilePage extends ConsumerWidget {
                         : Icons.upload_file,
                     size: 20,
                     color: user?.teacherVerified == true
-                        ? Colors.green
+                        ? AppPalette.sage
                         : scheme.onSurfaceVariant,
                   ),
                 ),
@@ -270,19 +338,20 @@ class ProfilePage extends ConsumerWidget {
           ],
           const SizedBox(height: 20),
 
-          // 退出登录
-          OutlinedButton.icon(
-            onPressed: () async {
-              await ref.read(authProvider.notifier).logout();
-              if (context.mounted) context.go('/login');
-            },
-            style: OutlinedButton.styleFrom(
-              foregroundColor: scheme.error,
-              side: BorderSide(color: scheme.error.withValues(alpha: 0.4)),
+          // 退出登录（仅正式账号；游客无退出概念，直接绑定或登录）
+          if (user != null && !user.isGuest)
+            OutlinedButton.icon(
+              onPressed: () async {
+                await ref.read(authProvider.notifier).logout();
+                if (context.mounted) context.go('/login');
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: scheme.error,
+                side: BorderSide(color: scheme.error.withValues(alpha: 0.4)),
+              ),
+              icon: const Icon(Icons.logout),
+              label: const Text('退出登录'),
             ),
-            icon: const Icon(Icons.logout),
-            label: const Text('退出登录'),
-          ),
         ],
       ),
     );
@@ -372,6 +441,245 @@ class ProfilePage extends ConsumerWidget {
             .showSnackBar(const SnackBar(content: Text('保存失败，请重试')));
       }
     }
+  }
+
+  /// 游客转正：绑定手机号 + 密码（短信验证码核验），游客数据保留
+  void _showUpgradeSheet(BuildContext context, WidgetRef ref) {
+    final phoneCtrl = TextEditingController();
+    final codeCtrl = TextEditingController();
+    final pwdCtrl = TextEditingController();
+    String? error;
+    int countdown = 0;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheetState) => Padding(
+          padding: EdgeInsets.fromLTRB(
+              24, 20, 24, MediaQuery.of(sheetContext).viewInsets.bottom + 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('绑定手机号',
+                  style: Theme.of(sheetContext).textTheme.titleLarge),
+              const SizedBox(height: 16),
+              TextField(
+                controller: phoneCtrl,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: '手机号'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: codeCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: '短信验证码',
+                  suffixIcon: TextButton(
+                    onPressed: countdown > 0
+                        ? null
+                        : () async {
+                            try {
+                              await ref
+                                  .read(authApiProvider)
+                                  .sendSmsCode(phoneCtrl.text.trim(), 'register');
+                              setSheetState(() {
+                                error = null;
+                                countdown = 60;
+                              });
+                              while (countdown > 0) {
+                                await Future<void>.delayed(
+                                    const Duration(seconds: 1));
+                                setSheetState(() => countdown--);
+                              }
+                            } on ApiException catch (e) {
+                              setSheetState(() => error = e.message);
+                            } catch (_) {
+                              setSheetState(() => error = '发送失败，请稍后再试');
+                            }
+                          },
+                    child: Text(countdown > 0 ? '${countdown}s' : '获取验证码'),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: pwdCtrl,
+                obscureText: true,
+                decoration:
+                    const InputDecoration(labelText: '设置密码', helperText: '至少 8 位'),
+              ),
+              if (error != null) ...[
+                const SizedBox(height: 10),
+                Text(error!,
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(sheetContext).colorScheme.error)),
+              ],
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: () async {
+                  final err = await ref.read(authProvider.notifier).upgradeGuest(
+                      phone: phoneCtrl.text.trim(),
+                      password: pwdCtrl.text,
+                      smsCode: codeCtrl.text.trim());
+                  if (err == null) {
+                    if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('绑定成功，数据已保留')));
+                    }
+                  } else {
+                    setSheetState(() => error = err);
+                  }
+                },
+                child: const Text('完成绑定'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 修改密码
+  void _showChangePasswordDialog(BuildContext context, WidgetRef ref) {
+    final oldCtrl = TextEditingController();
+    final newCtrl = TextEditingController();
+    String? error;
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text('修改密码'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: oldCtrl,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: '原密码'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: newCtrl,
+                obscureText: true,
+                decoration: const InputDecoration(
+                    labelText: '新密码', helperText: '至少 8 位；其他设备将被踢下线'),
+              ),
+              if (error != null) ...[
+                const SizedBox(height: 10),
+                Text(error!,
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(dialogContext).colorScheme.error)),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('取消')),
+            FilledButton(
+              onPressed: () async {
+                try {
+                  await ref
+                      .read(authApiProvider)
+                      .changePassword(oldCtrl.text, newCtrl.text);
+                  if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('密码已修改')));
+                  }
+                } on ApiException catch (e) {
+                  setDialogState(() => error = e.message);
+                } catch (_) {
+                  setDialogState(() => error = '修改失败，请稍后再试');
+                }
+              },
+              child: const Text('确认'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 设备管理：列出活跃设备，可踢掉其他设备
+  void _showDevicesSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheetState) {
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('设备管理',
+                      style: Theme.of(sheetContext).textTheme.titleLarge),
+                  const SizedBox(height: 12),
+                  FutureBuilder<List<DeviceSession>>(
+                    future: ref.read(authApiProvider).listDevices(),
+                    builder: (ctx, snap) {
+                      if (!snap.hasData) {
+                        return const Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      final devices = snap.data!;
+                      if (devices.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text('暂无活跃设备'),
+                        );
+                      }
+                      return Column(
+                        children: [
+                          for (final d in devices)
+                            ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              leading: Icon(
+                                d.current
+                                    ? Icons.smartphone
+                                    : Icons.devices_other,
+                                size: 20,
+                              ),
+                              title: Text(d.deviceName.isEmpty
+                                  ? (d.deviceId.isEmpty ? '未知设备' : d.deviceId)
+                                  : d.deviceName),
+                              subtitle: Text(d.current
+                                  ? '当前设备'
+                                  : '最近活跃 ${d.lastSeen?.toLocal().toString().substring(0, 16) ?? '-'}'),
+                              trailing: d.current
+                                  ? null
+                                  : TextButton(
+                                      onPressed: () async {
+                                        await ref
+                                            .read(authApiProvider)
+                                            .revokeDevice(d.sid);
+                                        setSheetState(() {});
+                                      },
+                                      child: const Text('踢下线'),
+                                    ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 }
 

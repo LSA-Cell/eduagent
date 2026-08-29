@@ -31,16 +31,28 @@ def _utcnow() -> datetime:
 class UserStore(Protocol):
     async def get_by_phone(self, phone: str) -> Any | None: ...
     async def get_by_id(self, user_id: uuid.UUID) -> Any | None: ...
+    async def get_by_email(self, email: str) -> Any | None: ...
+    async def get_by_device_id(self, device_id: str) -> Any | None: ...
+    async def get_by_wechat_openid(self, openid: str) -> Any | None: ...
+    async def get_by_apple_sub(self, sub: str) -> Any | None: ...
     async def create(
         self,
         *,
-        phone: str,
-        password_hash: str,
+        phone: str | None = None,
+        password_hash: str | None = None,
         email: str | None = None,
         grade_level: str | None = None,
         default_subject: str | None = None,
+        is_guest: bool = False,
+        device_id: str | None = None,
+        wechat_openid: str | None = None,
+        apple_sub: str | None = None,
     ) -> Any: ...
     async def set_mode(self, user_id: uuid.UUID, mode: str) -> Any | None: ...
+    async def set_password(self, user_id: uuid.UUID, password_hash: str) -> Any | None: ...
+    async def upgrade_guest(
+        self, user_id: uuid.UUID, *, phone: str, password_hash: str
+    ) -> Any | None: ...
     async def update_profile(
         self,
         user_id: uuid.UUID,
@@ -61,6 +73,26 @@ class SqlAlchemyUserStore:
     async def get_by_id(self, user_id: uuid.UUID) -> User | None:
         return await self.session.get(User, user_id)
 
+    async def get_by_email(self, email: str) -> User | None:
+        result = await self.session.execute(select(User).where(User.email == email))
+        return result.scalars().first()
+
+    async def get_by_device_id(self, device_id: str) -> User | None:
+        result = await self.session.execute(
+            select(User).where(User.device_id == device_id, User.is_guest.is_(True))
+        )
+        return result.scalars().first()
+
+    async def get_by_wechat_openid(self, openid: str) -> User | None:
+        result = await self.session.execute(
+            select(User).where(User.wechat_openid == openid)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_apple_sub(self, sub: str) -> User | None:
+        result = await self.session.execute(select(User).where(User.apple_sub == sub))
+        return result.scalar_one_or_none()
+
     async def create(self, **kwargs) -> User:
         user = User(**kwargs)
         self.session.add(user)
@@ -72,6 +104,27 @@ class SqlAlchemyUserStore:
         if user is None:
             return None
         user.user_mode = mode
+        await self.session.commit()
+        return user
+
+    async def set_password(self, user_id: uuid.UUID, password_hash: str) -> User | None:
+        user = await self.session.get(User, user_id)
+        if user is None:
+            return None
+        user.password_hash = password_hash
+        await self.session.commit()
+        return user
+
+    async def upgrade_guest(
+        self, user_id: uuid.UUID, *, phone: str, password_hash: str
+    ) -> User | None:
+        """游客转正：绑定手机号 + 密码，保留原账号全部数据。"""
+        user = await self.session.get(User, user_id)
+        if user is None:
+            return None
+        user.phone = phone
+        user.password_hash = password_hash
+        user.is_guest = False
         await self.session.commit()
         return user
 
@@ -96,14 +149,18 @@ class SqlAlchemyUserStore:
 
 @dataclass
 class UserRecord:
-    phone: str
-    password_hash: str
+    phone: str | None = None
+    password_hash: str | None = None
     email: str | None = None
     grade_level: str | None = None
     default_subject: str | None = None
     id: uuid.UUID = field(default_factory=uuid.uuid4)
     is_teacher: bool = False
     is_paid: bool = False
+    is_guest: bool = False
+    device_id: str | None = None
+    wechat_openid: str | None = None
+    apple_sub: str | None = None
     user_mode: str = "student"
     teacher_verified_at: datetime | None = None
     created_at: datetime = field(default_factory=_utcnow)
@@ -121,6 +178,27 @@ class InMemoryUserStore:
     async def get_by_id(self, user_id: uuid.UUID) -> UserRecord | None:
         return self._by_id.get(user_id)
 
+    async def get_by_email(self, email: str) -> UserRecord | None:
+        return next((u for u in self._by_id.values() if u.email == email), None)
+
+    async def get_by_device_id(self, device_id: str) -> UserRecord | None:
+        return next(
+            (
+                u
+                for u in self._by_id.values()
+                if u.device_id == device_id and u.is_guest
+            ),
+            None,
+        )
+
+    async def get_by_wechat_openid(self, openid: str) -> UserRecord | None:
+        return next(
+            (u for u in self._by_id.values() if u.wechat_openid == openid), None
+        )
+
+    async def get_by_apple_sub(self, sub: str) -> UserRecord | None:
+        return next((u for u in self._by_id.values() if u.apple_sub == sub), None)
+
     async def create(self, **kwargs) -> UserRecord:
         record = UserRecord(**kwargs)
         self._by_id[record.id] = record
@@ -130,6 +208,25 @@ class InMemoryUserStore:
         record = self._by_id.get(user_id)
         if record is not None:
             record.user_mode = mode
+        return record
+
+    async def set_password(
+        self, user_id: uuid.UUID, password_hash: str
+    ) -> UserRecord | None:
+        record = self._by_id.get(user_id)
+        if record is not None:
+            record.password_hash = password_hash
+        return record
+
+    async def upgrade_guest(
+        self, user_id: uuid.UUID, *, phone: str, password_hash: str
+    ) -> UserRecord | None:
+        record = self._by_id.get(user_id)
+        if record is None:
+            return None
+        record.phone = phone
+        record.password_hash = password_hash
+        record.is_guest = False
         return record
 
     async def update_profile(

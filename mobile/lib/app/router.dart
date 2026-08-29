@@ -38,7 +38,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         case AuthStatus.unknown:
           return null; // 启动中，保持
         case AuthStatus.unauthenticated:
+          // 仅游客模式不可用（如离线）时才落到登录页；登录页保留「游客体验」入口
           return loggingIn ? null : '/login';
+        case AuthStatus.guest:
+          // 游客：不强制登录，主功能全开放；教师 Tab 仍需正式教师身份
+          if (state.matchedLocation == '/teacher') return '/chat';
+          return null;
         case AuthStatus.authenticated:
           if (loggingIn) return '/chat';
           // 教师 Tab 仅教师可直达

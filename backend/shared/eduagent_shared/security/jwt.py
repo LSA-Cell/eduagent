@@ -51,10 +51,15 @@ def create_access_token(
     )
 
 
-def create_refresh_token(user_id: str | uuid.UUID) -> str:
-    """签发刷新令牌（默认 7 天）。"""
+def create_refresh_token(
+    user_id: str | uuid.UUID, extra_claims: dict[str, Any] | None = None
+) -> str:
+    """签发刷新令牌（默认 7 天）；extra_claims 可携带 sid（设备会话 ID）等。"""
     return _create_token(
-        user_id, "refresh", timedelta(days=get_settings().refresh_token_expire_days)
+        user_id,
+        "refresh",
+        timedelta(days=get_settings().refresh_token_expire_days),
+        extra_claims,
     )
 
 

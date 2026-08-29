@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
+import '../../core/network/api/auth_api.dart';
+import '../../core/network/dio_client.dart';
 import '../../models/user.dart';
 import 'auth_provider.dart';
 
@@ -19,16 +21,43 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _nicknameCtrl = TextEditingController();
+  final _smsCodeCtrl = TextEditingController();
   UserMode _mode = UserMode.student;
   bool _loading = false;
   String? _error;
+  int _smsCountdown = 0;
 
   @override
   void dispose() {
     _usernameCtrl.dispose();
     _passwordCtrl.dispose();
     _nicknameCtrl.dispose();
+    _smsCodeCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _sendSmsCode() async {
+    final phone = _usernameCtrl.text.trim();
+    if (!RegExp(r'^1[3-9]\d{9}$').hasMatch(phone)) {
+      setState(() => _error = '请先输入正确的手机号');
+      return;
+    }
+    try {
+      await ref.read(authApiProvider).sendSmsCode(phone, 'register');
+      if (!mounted) return;
+      setState(() {
+        _error = null;
+        _smsCountdown = 60;
+      });
+      while (_smsCountdown > 0 && mounted) {
+        await Future<void>.delayed(const Duration(seconds: 1));
+        if (mounted) setState(() => _smsCountdown--);
+      }
+    } on ApiException catch (e) {
+      setState(() => _error = e.message);
+    } catch (_) {
+      setState(() => _error = '发送失败，请稍后再试');
+    }
   }
 
   Future<void> _submit() async {
@@ -42,6 +71,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           password: _passwordCtrl.text,
           nickname: _nicknameCtrl.text.trim(),
           mode: _mode,
+          smsCode: _smsCodeCtrl.text.trim(),
         );
     if (!mounted) return;
     if (error == null) {
@@ -94,10 +124,28 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
+                  controller: _smsCodeCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: '短信验证码',
+                    prefixIcon: const Icon(Icons.pin_outlined),
+                    suffixIcon: TextButton(
+                      onPressed: _smsCountdown > 0 ? null : _sendSmsCode,
+                      child: Text(
+                          _smsCountdown > 0 ? '${_smsCountdown}s 后重发' : '获取验证码'),
+                    ),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().length < 4) ? '请输入短信验证码' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
                   controller: _passwordCtrl,
                   obscureText: true,
                   decoration: const InputDecoration(
-                      labelText: '密码', prefixIcon: Icon(Icons.lock_outline)),
+                      labelText: '密码',
+                      helperText: '至少 8 位',
+                      prefixIcon: Icon(Icons.lock_outline)),
                   validator: (v) =>
                       (v == null || v.length < 8) ? '密码至少 8 位' : null,
                 ),

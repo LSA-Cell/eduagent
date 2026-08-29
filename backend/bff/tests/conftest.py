@@ -61,9 +61,18 @@ async def client(app):
 
 
 async def register_and_login(client: httpx.AsyncClient, phone: str = "13800000001") -> str:
-    """注册并返回 access_token。"""
+    """注册并返回 access_token（注册需短信验证码，dev 环境走 dev_code 直通）。"""
+    code_resp = await client.post(
+        "/api/v1/auth/sms-code", json={"phone": phone, "scene": "register"}
+    )
+    assert code_resp.status_code == 200, code_resp.text
     resp = await client.post(
-        "/api/v1/auth/register", json={"phone": phone, "password": "password123"}
+        "/api/v1/auth/register",
+        json={
+            "phone": phone,
+            "password": "password123",
+            "sms_code": code_resp.json()["dev_code"],
+        },
     )
     assert resp.status_code == 201, resp.text
     return resp.json()["tokens"]["access_token"]

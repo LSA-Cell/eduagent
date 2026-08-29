@@ -5,16 +5,35 @@ from __future__ import annotations
 from tests.conftest import auth_headers, register_and_login
 
 
+async def _dev_sms_code(client, phone: str, scene: str = "register") -> str:
+    resp = await client.post("/api/v1/auth/sms-code", json={"phone": phone, "scene": scene})
+    assert resp.status_code == 200, resp.text
+    return resp.json()["dev_code"]
+
+
+async def _clear_sms_interval(app) -> None:
+    """清掉短信重发间隔键（同号短时间内重复取码的测试用）。"""
+    redis = app.state.redis
+    async for key in redis.scan_iter("sms_int:*"):
+        await redis.delete(key)
+
+
 async def test_register_success(client):
     resp = await client.post(
         "/api/v1/auth/register",
-        json={"phone": "13800000001", "password": "password123", "grade_level": "初三"},
+        json={
+            "phone": "13800000001",
+            "password": "password123",
+            "grade_level": "初三",
+            "sms_code": await _dev_sms_code(client, "13800000001"),
+        },
     )
     assert resp.status_code == 201
     body = resp.json()
     assert body["user"]["phone"] == "13800000001"
     assert body["user"]["grade_level"] == "初三"
     assert body["user"]["user_mode"] == "student"
+    assert body["user"]["is_guest"] is False
     tokens = body["tokens"]
     assert tokens["token_type"] == "bearer"
     assert tokens["access_token"] and tokens["refresh_token"]
@@ -23,10 +42,34 @@ async def test_register_success(client):
     assert "password" not in resp.text
 
 
-async def test_register_duplicate_phone_conflict(client):
-    await register_and_login(client)
+async def test_register_requires_sms_code(client):
     resp = await client.post(
-        "/api/v1/auth/register", json={"phone": "13800000001", "password": "password123"}
+        "/api/v1/auth/register", json={"phone": "13800000009", "password": "password123"}
+    )
+    assert resp.status_code == 422
+    assert resp.json()["code"] == "sms_code_required"
+
+
+async def test_register_wrong_sms_code(client):
+    await _dev_sms_code(client, "13800000009")
+    resp = await client.post(
+        "/api/v1/auth/register",
+        json={"phone": "13800000009", "password": "password123", "sms_code": "000000"},
+    )
+    assert resp.status_code == 422
+    assert resp.json()["code"] == "invalid_sms_code"
+
+
+async def test_register_duplicate_phone_conflict(client, app):
+    await register_and_login(client)
+    await _clear_sms_interval(app)
+    resp = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "phone": "13800000001",
+            "password": "password123",
+            "sms_code": await _dev_sms_code(client, "13800000001"),
+        },
     )
     assert resp.status_code == 409
     assert resp.json()["code"] == "phone_taken"
@@ -72,7 +115,12 @@ async def test_me_without_token_unauthorized(client):
 
 async def test_refresh_flow(client):
     register = await client.post(
-        "/api/v1/auth/register", json={"phone": "13800000002", "password": "password123"}
+        "/api/v1/auth/register",
+        json={
+            "phone": "13800000002",
+            "password": "password123",
+            "sms_code": await _dev_sms_code(client, "13800000002"),
+        },
     )
     refresh_token = register.json()["tokens"]["refresh_token"]
 
@@ -94,7 +142,12 @@ async def test_refresh_rejects_access_token(client):
 async def test_refresh_token_single_use_rotation(client):
     """旧 refresh token 旋转后即作废，重放必须 401。"""
     register = await client.post(
-        "/api/v1/auth/register", json={"phone": "13800000003", "password": "password123"}
+        "/api/v1/auth/register",
+        json={
+            "phone": "13800000003",
+            "password": "password123",
+            "sms_code": await _dev_sms_code(client, "13800000003"),
+        },
     )
     refresh_token = register.json()["tokens"]["refresh_token"]
 

@@ -96,6 +96,32 @@ class Settings(BaseSettings):
     rate_limit_paid: int = 60
     rate_limit_teacher: int = 100
 
+    # ---------- 游客登录 ----------
+    guest_login_enabled: bool = True  # 允许设备 ID 换取游客令牌（不强制注册）
+
+    # ---------- 登录安全（BFF） ----------
+    login_max_failures: int = 5  # 连续失败达到此次数后锁定账号
+    login_lock_minutes: int = 15  # 账号锁定时长（分钟）
+    login_captcha_threshold: int = 3  # 连续失败达到此次数后要求图形验证码
+    captcha_expire_minutes: int = 5
+    single_device_login: bool = False  # 开启后新登录会吊销同账号其他设备的会话
+
+    # ---------- 短信验证码（BFF） ----------
+    # provider=log 仅记录日志（仅限 dev/test，生产启动即拒绝）；webhook 走 SMS_WEBHOOK_URL 外发
+    sms_provider: str = "log"
+    sms_webhook_url: str = ""
+    sms_code_expire_minutes: int = 5
+    sms_code_length: int = 6
+    sms_send_interval_seconds: int = 60  # 同手机号同场景重发间隔
+    sms_daily_limit: int = 10  # 同手机号每日发送上限
+    sms_max_verify_attempts: int = 5  # 单条验证码最大试错次数
+    sms_verify_register: bool = True  # 注册必须携带短信验证码
+
+    # ---------- 第三方登录（BFF；未配置时对应端点 503 fail-closed） ----------
+    wechat_app_id: str = ""
+    wechat_app_secret: str = ""
+    apple_client_id: str = ""  # iOS App 的 Bundle ID（Apple identity_token 的 aud）
+
     # ---------- CORS（BFF） ----------
     # 逗号分隔的来源字符串；默认 * 仅用于 dev/移动端，生产环境显式配置域名
     # 用 str 而非 list[str]：pydantic-settings 对复杂类型会先按 JSON 解码，CSV 字符串会解析失败
@@ -129,6 +155,12 @@ class Settings(BaseSettings):
             raise ValueError(
                 f"APP_ENV={self.app_env!r} 环境下检测到默认占位密钥：{', '.join(bad)}；"
                 "请在 .env 中配置真实密钥后再启动"
+            )
+        # 短信 provider=log 会把验证码写进日志，生产环境 fail-closed（防带码上线）
+        if self.sms_provider == "log":
+            raise ValueError(
+                f"APP_ENV={self.app_env!r} 环境下 SMS_PROVIDER=log 会把验证码写入日志，"
+                "生产环境请配置 SMS_PROVIDER=webhook + SMS_WEBHOOK_URL"
             )
         return self
 

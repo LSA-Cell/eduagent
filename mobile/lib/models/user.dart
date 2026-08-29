@@ -14,6 +14,7 @@ class UserProfile {
     this.avatarUrl,
     this.teacherVerified = false,
     this.selectedModel = 'auto',
+    this.isGuest = false,
   });
 
   final String id;
@@ -33,6 +34,9 @@ class UserProfile {
   /// 当前选择的模型（auto 表示双轨路由自动选择）
   final String selectedModel;
 
+  /// 游客账号（未绑定手机号，可随时升级为正式账号）
+  final bool isGuest;
+
   UserProfile copyWith({
     String? nickname,
     UserMode? mode,
@@ -41,6 +45,7 @@ class UserProfile {
     String? avatarUrl,
     bool? teacherVerified,
     String? selectedModel,
+    bool? isGuest,
   }) {
     return UserProfile(
       id: id,
@@ -51,6 +56,7 @@ class UserProfile {
       avatarUrl: avatarUrl ?? this.avatarUrl,
       teacherVerified: teacherVerified ?? this.teacherVerified,
       selectedModel: selectedModel ?? this.selectedModel,
+      isGuest: isGuest ?? this.isGuest,
     );
   }
 
@@ -72,6 +78,7 @@ class UserProfile {
       teacherVerified:
           (json['is_teacher'] ?? json['teacherVerified']) as bool? ?? false,
       selectedModel: json['selectedModel'] as String? ?? 'auto',
+      isGuest: (json['is_guest'] ?? json['isGuest']) as bool? ?? false,
     );
   }
 
@@ -84,6 +91,7 @@ class UserProfile {
         if (avatarUrl != null) 'avatarUrl': avatarUrl,
         'teacherVerified': teacherVerified,
         'selectedModel': selectedModel,
+        'isGuest': isGuest,
       };
 }
 

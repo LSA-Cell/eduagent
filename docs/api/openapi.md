@@ -35,10 +35,11 @@
 ### 1.1 注册 `POST /auth/register`
 
 ```json
-// 请求
+// 请求（SMS_VERIFY_REGISTER=true 时必传 sms_code，先 POST /auth/sms-code 取码，scene=register）
 {
   "phone": "13800001111",
-  "password": "Passw0rd!",
+  "password": "Passw0rd!",               // 8-128 位（前后端统一）
+  "sms_code": "123456",
   "email": "alice@example.com",       // 可选
   "grade_level": "senior",            // primary/junior/senior/university
   "default_subject": "math"
@@ -64,17 +65,67 @@
 ### 1.2 登录 `POST /auth/login`
 
 ```json
-// 请求（phone 或 email 二选一）
-{ "phone": "13800001111", "password": "Passw0rd!" }
-// 响应 200：同注册的 user + tokens 结构
+// 请求
+{ "phone": "13800001111", "password": "Passw0rd!", "device_id": "可选", "device_name": "可选" }
+// 响应 200：TokenResponse（不含 user，需再取 GET /users/me）
+// 连续失败 >= LOGIN_CAPTCHA_THRESHOLD(3) 次后：401 captcha_required，
+//   需携带 captcha_id + captcha_code（GET /auth/captcha 获取）重试
+// 连续失败 >= LOGIN_MAX_FAILURES(5) 次后：423 account_locked，锁定 LOGIN_LOCK_MINUTES(15) 分钟
 ```
+
+### 1.2.1 邮箱登录 `POST /auth/login-email`
+
+```json
+{ "email": "alice@example.com", "password": "Passw0rd!" }   // 响应同 1.2
+```
+
+### 1.2.2 短信验证码登录 `POST /auth/login-sms`
+
+```json
+// 先 POST /auth/sms-code {phone, scene:"login"} 取码；手机号未注册时自动建号
+{ "phone": "13800001111", "code": "123456" }   // 响应同 1.2
+```
+
+### 1.2.3 游客登录 `POST /auth/guest`
+
+```json
+// 不强制登录：设备 ID 换令牌；同设备重进找回同一游客账号（数据保留）
+{ "device_id": "<uuid>", "device_name": "可选" }   // 响应同 1.2；GUEST_LOGIN_ENABLED=false 时 403
+```
+
+### 1.2.4 游客转正 `POST /auth/upgrade`（游客令牌）
+
+```json
+// 绑定手机号+密码（需 scene=register 短信验证码），游客数据全部保留
+{ "phone": "13800001111", "password": "Passw0rd!", "sms_code": "123456" }   // 响应同 1.1
+```
+
+### 1.2.5 第三方登录 `POST /auth/oauth/{provider}`（wechat / apple）
+
+```json
+// wechat：{"code": "<微信授权码>"}；apple：{"identity_token": "<Apple JWT>"}
+// 未配置对应凭据（WECHAT_APP_ID/SECRET、APPLE_CLIENT_ID）时 503 oauth_not_configured（fail-closed）
+// dev/test 环境可用 {"dev_openid": "..."} 直通联调；首次登录自动建号
+```
+
+### 1.2.6 验证码
+
+- `POST /auth/sms-code` `{phone, scene: register|login|reset}` → `{expires_in[, dev_code]}`；
+  重发间隔 60s、日上限 10 条、试错 5 次（`SMS_*` 配置）；dev/test 响应附 dev_code
+- `GET /auth/captcha` → `{captcha_id, svg, expires_in}`（SVG 图形验证码，一次性消费）
+
+### 1.2.7 密码维护
+
+- 修改密码 `POST /auth/password/change`（登录态）`{old_password, new_password}` → 204；其他设备会话全部吊销
+- 找回密码 `POST /auth/password/reset` `{phone, sms_code(scene=reset), new_password}` → 204；全部设备会话吊销
+- 设置密码统一规则：8-128 位（前后端一致）
 
 ### 1.3 刷新令牌 `POST /auth/refresh`
 
 ```json
 // 请求
 { "refresh_token": "d2f9c1a4-..." }
-// 响应 200（refresh token 旋转：旧 token 立即作废）
+// 响应 200（refresh token 旋转：旧 token 立即作废；设备会话被吊销时 401）
 {
   "access_token": "eyJhbGciOi...(新)",
   "refresh_token": "9b7e2c10-...(新)",
@@ -83,7 +134,14 @@
 }
 ```
 
-约束：Access Token 有效期 15 分钟；Refresh Token 7 天（`ACCESS_TOKEN_EXPIRE_MINUTES` / `REFRESH_TOKEN_EXPIRE_DAYS`）。鉴权类端点在 Nginx 层有更严的按 IP 限流（5 r/s）。
+### 1.4 登出与设备管理（登录态）
+
+- 登出 `POST /auth/logout` → 204：吊销当前设备会话 + access token jti 黑名单（即刻生效）
+- 全部下线 `POST /auth/logout-all` → 204：吊销本账号所有设备会话
+- 设备列表 `GET /auth/devices` → `[{sid, device_id, device_name, created_at, last_seen, current}]`
+- 踢人下线 `DELETE /auth/devices/{sid}` → 204（仅限本账号会话）
+
+约束：Access Token 有效期 15 分钟；Refresh Token 7 天（`ACCESS_TOKEN_EXPIRE_MINUTES` / `REFRESH_TOKEN_EXPIRE_DAYS`）。鉴权类端点在 Nginx 层有更严的按 IP 限流（5 r/s）。`SINGLE_DEVICE_LOGIN=true` 时新登录自动踢掉同账号其他设备。
 
 ---
 

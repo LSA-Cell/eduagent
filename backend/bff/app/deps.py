@@ -16,6 +16,7 @@ from eduagent_shared.db import get_session
 from eduagent_shared.security.jwt import TokenError, decode_token
 
 from .errors import AppError
+from .services import devices
 from .services.store import (
     SqlAlchemyApiKeyStore,
     SqlAlchemyChatStore,
@@ -58,8 +59,13 @@ async def get_chat_store(
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
     user_store: Annotated[SqlAlchemyUserStore, Depends(get_user_store)],
+    redis: Annotated[aioredis.Redis, Depends(get_redis)],
 ):
-    """解析 Bearer access token 并加载用户；失败统一 401。"""
+    """解析 Bearer access token 并加载用户；失败统一 401。
+
+    登出/踢下线会把 access jti 写入 Redis 黑名单（TTL 至自然过期），此处校验；
+    Redis 故障 fail-open（与限流器同一可用性策略）。
+    """
     if credentials is None:
         raise AppError(401, "unauthorized", "缺少访问令牌")
     try:
@@ -67,6 +73,9 @@ async def get_current_user(
         user_id = uuid.UUID(str(claims["sub"]))
     except (TokenError, KeyError, ValueError):
         raise AppError(401, "unauthorized", "访问令牌无效或已过期") from None
+    jti = claims.get("jti")
+    if jti and await devices.is_access_blacklisted(redis, str(jti)):
+        raise AppError(401, "unauthorized", "登录状态已失效，请重新登录")
     user = await user_store.get_by_id(user_id)
     if user is None:
         raise AppError(401, "unauthorized", "用户不存在或已被删除")

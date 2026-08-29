@@ -29,6 +29,15 @@ CREATE TABLE IF NOT EXISTS users (
     created_at        TIMESTAMP NOT NULL DEFAULT now()
 );
 
+-- 游客登录 / 第三方登录扩展列（幂等：老库重跑本脚本亦可补齐）
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_guest      BOOLEAN NOT NULL DEFAULT false;  -- 游客账号（设备 ID 签发）
+ALTER TABLE users ADD COLUMN IF NOT EXISTS device_id     VARCHAR(64);                     -- 游客绑定设备
+ALTER TABLE users ADD COLUMN IF NOT EXISTS wechat_openid VARCHAR(64);                     -- 微信 openid
+ALTER TABLE users ADD COLUMN IF NOT EXISTS apple_sub     VARCHAR(255);                    -- Apple 用户标识 sub
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_wechat_openid ON users (wechat_openid) WHERE wechat_openid IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_apple_sub     ON users (apple_sub)     WHERE apple_sub IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_users_device_id           ON users (device_id)     WHERE device_id IS NOT NULL;
+
 -- 用户自带大模型 API Key（AES-256-GCM 加密存储，永不回显明文）
 CREATE TABLE IF NOT EXISTS user_api_keys (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),

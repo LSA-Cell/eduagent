@@ -54,13 +54,20 @@ class User(Base, TimestampMixin):
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = _uuid_pk()
-    phone: Mapped[str] = mapped_column(String(20), unique=True, index=True)
+    # phone/password_hash 可空：游客（设备 ID）与第三方登录账号没有手机号/密码
+    phone: Mapped[str | None] = mapped_column(String(20), unique=True, index=True)
     email: Mapped[str | None] = mapped_column(String(255))
-    password_hash: Mapped[str] = mapped_column(String(255))  # bcrypt 哈希，永不回显
+    password_hash: Mapped[str | None] = mapped_column(String(255))  # bcrypt 哈希，永不回显
     grade_level: Mapped[str | None] = mapped_column(String(50))  # 如 "初三" / "高二" / "大一"
     default_subject: Mapped[str | None] = mapped_column(String(50))
     is_teacher: Mapped[bool] = mapped_column(Boolean, default=False)
     is_paid: Mapped[bool] = mapped_column(Boolean, default=False)
+    # 游客账号：由设备 ID 签发，可通过 /auth/upgrade 绑定手机号转正
+    is_guest: Mapped[bool] = mapped_column(Boolean, default=False)
+    device_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    # 第三方登录标识（同一 provider 唯一）
+    wechat_openid: Mapped[str | None] = mapped_column(String(64), unique=True)
+    apple_sub: Mapped[str | None] = mapped_column(String(255), unique=True)
     # 身份模式：student / teacher / parent（PUT /users/me/mode 切换）
     user_mode: Mapped[str] = mapped_column(String(20), default="student")
     teacher_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

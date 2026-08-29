@@ -10,9 +10,13 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 # 中国大陆手机号
 PhoneStr = Annotated[str, StringConstraints(pattern=r"^1[3-9]\d{9}$")]
+# 设置密码统一规则：8-128 位（前后端一致；登录入参不限长度，只做非空校验）
+PasswordStr = Annotated[str, StringConstraints(min_length=8, max_length=128)]
 
 ProviderName = Literal["openai", "deepseek", "claude", "gemini"]
 UserMode = Literal["student", "teacher", "parent"]
+SmsSceneName = Literal["register", "login", "reset"]
+OAuthProviderName = Literal["wechat", "apple"]
 
 
 # ---------- 通用分页 ----------
@@ -33,15 +37,83 @@ class Page(BaseModel, Generic[T]):
 
 class RegisterRequest(BaseModel):
     phone: PhoneStr
-    password: str = Field(min_length=8, max_length=128)
+    password: PasswordStr
+    # SMS_VERIFY_REGISTER=true 时必传（服务端校验）；false 时可省略
+    sms_code: str | None = Field(default=None, max_length=8)
     email: str | None = Field(default=None, max_length=255)
     grade_level: str | None = None
     default_subject: str | None = None
+    device_id: str | None = Field(default=None, max_length=64)
+    device_name: str | None = Field(default=None, max_length=100)
 
 
 class LoginRequest(BaseModel):
     phone: PhoneStr
     password: str = Field(min_length=1, max_length=128)
+    device_id: str | None = Field(default=None, max_length=64)
+    device_name: str | None = Field(default=None, max_length=100)
+    # 连续失败达到阈值后由服务端要求图形验证码
+    captcha_id: str | None = Field(default=None, max_length=64)
+    captcha_code: str | None = Field(default=None, max_length=8)
+
+
+class GuestLoginRequest(BaseModel):
+    """游客登录：设备 ID 换令牌，同设备重进找回同一游客账号。"""
+
+    device_id: str = Field(min_length=8, max_length=64)
+    device_name: str | None = Field(default=None, max_length=100)
+
+
+class GuestUpgradeRequest(BaseModel):
+    """游客转正：绑定手机号 + 密码（需短信验证码），保留游客期间全部数据。"""
+
+    phone: PhoneStr
+    password: PasswordStr
+    sms_code: str = Field(min_length=4, max_length=8)
+
+
+class SmsCodeRequest(BaseModel):
+    phone: PhoneStr
+    scene: SmsSceneName
+
+
+class SmsLoginRequest(BaseModel):
+    """短信验证码登录；手机号未注册时自动建号（密码后补）。"""
+
+    phone: PhoneStr
+    code: str = Field(min_length=4, max_length=8)
+    device_id: str | None = Field(default=None, max_length=64)
+    device_name: str | None = Field(default=None, max_length=100)
+
+
+class EmailLoginRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=255)
+    password: str = Field(min_length=1, max_length=128)
+    device_id: str | None = Field(default=None, max_length=64)
+    device_name: str | None = Field(default=None, max_length=100)
+
+
+class OAuthLoginRequest(BaseModel):
+    """第三方登录：微信传 code，Apple 传 identity_token；dev/test 可用 dev_openid。"""
+
+    code: str | None = Field(default=None, max_length=256)
+    identity_token: str | None = Field(default=None, max_length=4096)
+    dev_openid: str | None = Field(default=None, max_length=128)
+    device_id: str | None = Field(default=None, max_length=64)
+    device_name: str | None = Field(default=None, max_length=100)
+
+
+class PasswordChangeRequest(BaseModel):
+    old_password: str = Field(min_length=1, max_length=128)
+    new_password: PasswordStr
+
+
+class PasswordResetRequest(BaseModel):
+    """找回密码：短信验证码核验通过后重置，并吊销全部设备会话。"""
+
+    phone: PhoneStr
+    sms_code: str = Field(min_length=4, max_length=8)
+    new_password: PasswordStr
 
 
 class RefreshRequest(BaseModel):
@@ -55,16 +127,37 @@ class TokenResponse(BaseModel):
     expires_in: int  # access token 有效期（秒）
 
 
+class DeviceSessionOut(BaseModel):
+    sid: str
+    device_id: str
+    device_name: str
+    created_at: int
+    last_seen: int
+    current: bool  # 是否当前请求所用会话
+
+
+class CaptchaResponse(BaseModel):
+    captcha_id: str
+    svg: str
+    expires_in: int
+
+
+class SmsCodeResponse(BaseModel):
+    expires_in: int
+    dev_code: str | None = None  # 仅 dev/test 环境返回
+
+
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    phone: str
+    phone: str | None  # 游客/纯第三方账号无手机号
     email: str | None
     grade_level: str | None
     default_subject: str | None
     is_teacher: bool
     is_paid: bool
+    is_guest: bool = False
     user_mode: str
     created_at: datetime
 
