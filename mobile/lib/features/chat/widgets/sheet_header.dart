@@ -24,7 +24,7 @@ class SheetHeader extends StatelessWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            gradient: AppTokens.tintedGradient(scheme),
+            color: scheme.primaryContainer,
             borderRadius: BorderRadius.circular(AppTokens.radiusMd),
           ),
           child: Icon(icon, size: 19, color: scheme.primary),

@@ -46,7 +46,7 @@ class _IconBadge extends StatelessWidget {
       width: 38,
       height: 38,
       decoration: BoxDecoration(
-        gradient: AppTokens.tintedGradient(scheme),
+        color: scheme.primaryContainer,
         borderRadius: BorderRadius.circular(AppTokens.radiusMd),
       ),
       child: Icon(icon, size: 20, color: scheme.primary),
@@ -61,18 +61,18 @@ class GradingCard extends StatelessWidget {
   final GradingResult data;
 
   Color _severityColor(String severity) => switch (severity) {
-        'praise' => Colors.green,
-        'warn' => Colors.orange,
-        _ => Colors.red,
+        'praise' => AppPalette.sage,
+        'warn' => AppPalette.amber,
+        _ => AppPalette.clay,
       };
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final scoreColor = data.score >= 80
-        ? Colors.green
+        ? AppPalette.sage
         : data.score >= 60
-            ? Colors.orange
+            ? AppPalette.amber
             : scheme.error;
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),

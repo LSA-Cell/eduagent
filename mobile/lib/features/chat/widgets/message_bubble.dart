@@ -157,7 +157,7 @@ class MessageBubble extends StatelessWidget {
               child: CircularProgressIndicator(
                   strokeWidth: 2,
                   color: message.isUser
-                      ? Colors.white
+                      ? Theme.of(context).colorScheme.onPrimary
                       : Theme.of(context).colorScheme.primary));
         }
         return MarkdownMath(data: message.content, textStyle: textStyle);

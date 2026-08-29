@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/theme.dart';
 import '../../../core/network/api/teacher_api.dart';
 import '../../../core/network/api/tool_api.dart';
 import '../../../core/network/api/user_api.dart';
@@ -329,7 +330,7 @@ class _AnalyticsSheetState extends ConsumerState<AnalyticsSheet> {
                 subtitle: const Text('支持 CSV / Excel（xlsx、xls）'),
                 trailing: _filePath == null
                     ? null
-                    : const Icon(Icons.check_circle, color: Colors.green),
+                    : const Icon(Icons.check_circle, color: AppPalette.sage),
                 onTap: _pickFile,
               ),
             )

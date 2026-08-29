@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../../app/theme.dart';
 import '../../../models/analytics.dart';
 
 /// 学情看板：成绩趋势线图 + 知识点掌握柱状图 + 题型失分饼图
@@ -126,7 +127,7 @@ class _ScoreTrendChart extends StatelessWidget {
                 color: Theme.of(context).colorScheme.primary,
                 strokeWidth: 2,
                 strokeColor:
-                    Theme.of(context).cardTheme.color ?? Colors.white,
+                    Theme.of(context).cardTheme.color ?? AppPalette.cardLight,
               ),
             ),
             belowBarData: BarAreaData(
@@ -201,9 +202,9 @@ class _MasteryBarChart extends StatelessWidget {
                     end: Alignment.topCenter,
                     colors: () {
                       final c = items[i].mastery >= 80
-                          ? Colors.green
+                          ? AppPalette.sage
                           : items[i].mastery >= 60
-                              ? Colors.orange
+                              ? AppPalette.amber
                               : Theme.of(context).colorScheme.error;
                       return [c.withValues(alpha: 0.65), c];
                     }(),
@@ -223,11 +224,11 @@ class _TypePieChart extends StatelessWidget {
   final List<TypeSlice> slices;
 
   static const _colors = [
-    Color(0xFF3F51B5),
-    Color(0xFF009688),
-    Color(0xFFFF9800),
-    Color(0xFFE91E63),
-    Color(0xFF9C27B0),
+    AppPalette.terracotta,
+    AppPalette.sage,
+    AppPalette.amber,
+    Color(0xFF6B7A8C),
+    Color(0xFF8C6B7A),
   ];
 
   @override
@@ -244,7 +245,7 @@ class _TypePieChart extends StatelessWidget {
               color: _colors[i % _colors.length],
               radius: 68,
               borderSide:
-                  BorderSide(color: Theme.of(context).cardTheme.color ?? Colors.white, width: 2),
+                  BorderSide(color: Theme.of(context).cardTheme.color ?? AppPalette.cardLight, width: 2),
               title:
                   '${slices[i].type}\n${(slices[i].ratio * 100).toStringAsFixed(0)}%',
               titleStyle: const TextStyle(

@@ -12,16 +12,42 @@ class AppTheme {
   final ThemeData dark;
 }
 
-/// 设计令牌：圆角 / 间距 / 阴影 / 渐变，供各页面统一取用。
+/// Claude 式古典配色：暖米白纸面 + 墨褐文字 + 赤陶单一强调色。
+class AppPalette {
+  AppPalette._();
+
+  // 浅色模式
+  static const Color paper = Color(0xFFF6F2EB); // 羊皮纸底
+  static const Color cardLight = Color(0xFFFDFBF5); // 纸面卡片
+  static const Color ink = Color(0xFF26201A); // 墨褐正文
+  static const Color inkSoft = Color(0xFF6E6459); // 次要文字
+  static const Color hairlineLight = Color(0xFFE2DACD); // 暖灰描边
+
+  // 深色模式（暖调炭黑）
+  static const Color soot = Color(0xFF1D1915);
+  static const Color cardDark = Color(0xFF282219);
+  static const Color paperInk = Color(0xFFEDE6D8); // 深色模式正文
+  static const Color hairlineDark = Color(0xFF3D362B);
+
+  // 强调色：赤陶（terracotta）
+  static const Color terracotta = Color(0xFFC15F3C);
+
+  // 语义状态色（古典低饱和）：掌握度 / 评分 / 认证徽标
+  static const Color sage = Color(0xFF5F7A5A); // 掌握 / 通过 / 已完成
+  static const Color amber = Color(0xFFB08A3E); // 警告 / 中等 / 模糊
+  static const Color clay = Color(0xFFB04A3A); // 错误 / 严重（无 context 处使用）
+}
+
+/// 设计令牌：圆角 / 间距 / 阴影，供各页面统一取用。
 class AppTokens {
   AppTokens._();
 
-  // 圆角
-  static const double radiusSm = 8;
-  static const double radiusMd = 12;
-  static const double radiusLg = 16;
-  static const double radiusXl = 20;
-  static const double radiusXxl = 28;
+  // 圆角（整体收敛，古典克制）
+  static const double radiusSm = 6;
+  static const double radiusMd = 10;
+  static const double radiusLg = 12;
+  static const double radiusXl = 16;
+  static const double radiusXxl = 22;
 
   // 间距
   static const double gapXs = 4;
@@ -31,40 +57,14 @@ class AppTokens {
   static const double gapXl = 24;
   static const double gapXxl = 32;
 
-  /// 柔和浮起阴影（气泡、悬浮按钮等）
+  /// 近乎不可见的单层浅影（气泡、卡片等）
   static List<BoxShadow> softShadow(ColorScheme scheme) => [
         BoxShadow(
-          color: scheme.shadow.withValues(alpha: 0.08),
-          blurRadius: 12,
-          offset: const Offset(0, 3),
+          color: scheme.shadow.withValues(alpha: 0.05),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
         ),
       ];
-
-  /// 品牌色光晕（录音按钮、登录 Logo 等强调元素）
-  static List<BoxShadow> glowShadow(Color color) => [
-        BoxShadow(
-          color: color.withValues(alpha: 0.35),
-          blurRadius: 20,
-          offset: const Offset(0, 6),
-        ),
-      ];
-
-  /// 品牌渐变：primary → tertiary（用户气泡、Logo、主视觉按钮）
-  static LinearGradient brandGradient(ColorScheme scheme) => LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [scheme.primary, scheme.tertiary],
-      );
-
-  /// 头像/图标容器的浅色渐变底
-  static LinearGradient tintedGradient(ColorScheme scheme) => LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          scheme.primaryContainer.withValues(alpha: 0.65),
-          scheme.tertiaryContainer.withValues(alpha: 0.45),
-        ],
-      );
 }
 
 TextTheme _refineTextTheme(TextTheme base, ColorScheme scheme) {
@@ -109,14 +109,40 @@ TextTheme _refineTextTheme(TextTheme base, ColorScheme scheme) {
 }
 
 ThemeData _build(Color seed, Brightness brightness) {
-  final scheme = ColorScheme.fromSeed(seedColor: seed, brightness: brightness);
+  final generated = ColorScheme.fromSeed(seedColor: seed, brightness: brightness);
   final isLight = brightness == Brightness.light;
-  // 背景与卡片拉开层次：浅色模式灰底白卡，深色模式深底浅卡
+  // Claude 式纸面：米白底、暖白卡、墨褐文字、暖灰 hairline，强调色收敛为赤陶
+  final scheme = isLight
+      ? generated.copyWith(
+          surface: AppPalette.paper,
+          surfaceContainerLowest: AppPalette.cardLight,
+          surfaceContainerLow: const Color(0xFFFAF6EF),
+          surfaceContainer: const Color(0xFFF1ECE3),
+          surfaceContainerHigh: const Color(0xFFECE6DB),
+          surfaceContainerHighest: const Color(0xFFE6DFD3),
+          onSurface: AppPalette.ink,
+          onSurfaceVariant: AppPalette.inkSoft,
+          outlineVariant: AppPalette.hairlineLight,
+          outline: const Color(0xFFC9BFAD),
+        )
+      : generated.copyWith(
+          surface: AppPalette.soot,
+          surfaceContainerLowest: const Color(0xFF16130F),
+          surfaceContainerLow: const Color(0xFF211C16),
+          surfaceContainer: AppPalette.cardDark,
+          surfaceContainerHigh: const Color(0xFF322B20),
+          surfaceContainerHighest: const Color(0xFF3D3529),
+          onSurface: AppPalette.paperInk,
+          onSurfaceVariant: const Color(0xFFA79C8C),
+          outlineVariant: AppPalette.hairlineDark,
+          outline: const Color(0xFF5C5344),
+        );
+  // 背景与卡片拉开层次：浅色模式纸底暖白卡，深色模式深底浅卡
   final scaffoldColor =
-      isLight ? scheme.surfaceContainerLow : scheme.surface;
+      isLight ? scheme.surface : scheme.surface;
   final cardColor =
       isLight ? scheme.surfaceContainerLowest : scheme.surfaceContainerLow;
-  final hairline = scheme.outlineVariant.withValues(alpha: isLight ? 0.55 : 0.4);
+  final hairline = scheme.outlineVariant.withValues(alpha: isLight ? 0.85 : 0.7);
 
   final base = ThemeData(useMaterial3: true, colorScheme: scheme);
   final textTheme = _refineTextTheme(base.textTheme, scheme);
@@ -338,14 +364,14 @@ ThemeData _build(Color seed, Brightness brightness) {
   );
 }
 
-/// 角色种子色（避开 Material 官方色板色号，取自教育场景的物件）：
-/// 学生=墨水蓝（钢笔水）、家长=暖杏色（宣纸/木质课桌）、教师=松绿（黑板）
+/// 角色种子色：统一收敛为赤陶（terracotta）家族，仅按角色微调深浅。
+/// 学生=标准赤陶、家长=暖杏陶、教师=深陶土
 final appThemeProvider = Provider<AppTheme>((ref) {
   final mode = ref.watch(userModeProvider);
   final seed = switch (mode) {
-    UserMode.teacher => const Color(0xFF1F6F5C),
-    UserMode.parent => const Color(0xFFC2703D),
-    UserMode.student => const Color(0xFF2B50AA),
+    UserMode.teacher => const Color(0xFF8F4E38),
+    UserMode.parent => const Color(0xFFB46940),
+    UserMode.student => AppPalette.terracotta,
   };
   return AppTheme(
     light: _build(seed, Brightness.light),

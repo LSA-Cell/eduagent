@@ -414,11 +414,10 @@ class _ToolGridItem extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              gradient: enabled ? AppTokens.tintedGradient(scheme) : null,
               color: active
                   ? scheme.primaryContainer
                   : enabled
-                      ? null
+                      ? scheme.surfaceContainerLow
                       : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(AppTokens.radiusMd + 2),
             ),

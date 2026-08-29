@@ -53,11 +53,11 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
                     height: 84,
                     decoration: BoxDecoration(
                       color:
-                          Colors.green.withValues(alpha: 0.12),
+                          AppPalette.sage.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.check_circle_outline,
-                        size: 44, color: Colors.green),
+                        size: 44, color: AppPalette.sage),
                   ),
                   const SizedBox(height: 16),
                   Text('本轮复习完成！',
@@ -97,12 +97,12 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
                     _ReviewButton(
                         label: '模糊',
                         icon: Icons.remove_rounded,
-                        color: Colors.orange,
+                        color: AppPalette.amber,
                         onTap: () => _review(card, Familiarity.fuzzy)),
                     _ReviewButton(
                         label: '记得',
                         icon: Icons.check_rounded,
-                        color: Colors.green,
+                        color: AppPalette.sage,
                         onTap: () => _review(card, Familiarity.remembered)),
                   ],
                 ),
@@ -185,9 +185,10 @@ class _Face extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        // 正面白卡，背面品牌浅渐变，区分正背
-        gradient: isBack ? AppTokens.tintedGradient(scheme) : null,
-        color: isBack ? null : Theme.of(context).cardTheme.color,
+        // 正面白卡，背面主题浅色，区分正背
+        color: isBack
+            ? scheme.primaryContainer
+            : Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(AppTokens.radiusXl + 4),
         border: Border.all(
             color: scheme.outlineVariant.withValues(alpha: 0.6)),

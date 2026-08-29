@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/theme.dart';
 import '../../core/network/api/user_api.dart';
 import '../../models/mistake.dart';
 import '../chat/providers/chat_provider.dart';
@@ -80,9 +81,9 @@ class _MistakeCard extends ConsumerWidget {
   final Mistake mistake;
 
   Color _masteryColor(ColorScheme scheme) => mistake.mastery >= 80
-      ? Colors.green
+      ? AppPalette.sage
       : mistake.mastery >= 60
-          ? Colors.orange
+          ? AppPalette.amber
           : scheme.error;
 
   @override

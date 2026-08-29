@@ -171,7 +171,6 @@ class _MicButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final color = recording ? scheme.error : scheme.primary;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -187,11 +186,9 @@ class _MicButton extends StatelessWidget {
         child: Container(
           margin: recording ? null : const EdgeInsets.all(2),
           decoration: BoxDecoration(
-            gradient: recording ? null : AppTokens.brandGradient(scheme),
-            color: recording ? scheme.error : null,
+            color: recording ? scheme.error : scheme.primary,
             shape: BoxShape.circle,
-            boxShadow:
-                processing ? null : AppTokens.glowShadow(color),
+            boxShadow: processing ? null : AppTokens.softShadow(scheme),
           ),
           child: Icon(
             recording ? Icons.stop_rounded : Icons.mic,
@@ -269,7 +266,7 @@ class _ReportCard extends StatelessWidget {
               height: 92,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: AppTokens.tintedGradient(scheme),
+                color: scheme.primaryContainer,
                 border: Border.all(
                     color: scheme.primary.withValues(alpha: 0.25), width: 3),
               ),
