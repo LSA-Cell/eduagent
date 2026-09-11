@@ -12,6 +12,7 @@ from eduagent_shared.db import get_session
 from eduagent_shared.security.internal import InternalTokenError, verify_internal_token
 
 from .errors import ProxyError
+from .services.quota import SqlAlchemyQuotaStore
 from .services.store import SqlAlchemyApiKeyStore
 
 
@@ -35,3 +36,9 @@ async def get_key_store(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> SqlAlchemyApiKeyStore:
     return SqlAlchemyApiKeyStore(session)
+
+
+async def get_quota_store(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> SqlAlchemyQuotaStore:
+    return SqlAlchemyQuotaStore(session)

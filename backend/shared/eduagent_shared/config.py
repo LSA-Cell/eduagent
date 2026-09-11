@@ -79,13 +79,26 @@ class Settings(BaseSettings):
     multimodal_url: str = "http://multimodal:8003"
     api_proxy_url: str = "http://proxy:8004"
     docgen_url: str = "http://docgen:8005"
+    billing_url: str = "http://billing:8006"
     internal_service_token: str = "change_me_internal_service_token"
+
+    # ---------- Billing（会员订阅与支付，docs/billing/spec.md） ----------
+    # webhook 验签密钥（JSON 字符串）：channel -> HMAC-SHA256 secret；
+    # 未配置 secret 的渠道 webhook 一律 503 fail-closed（与第三方登录同策略）
+    billing_webhook_secrets: dict[str, str] = {}
 
     # ---------- 推理网关 ----------
     # 自有模型路由表（JSON 字符串）：model 名 -> vLLM 实例 URL 列表
     vllm_routes: dict[str, list[str]] = {}
     model_health_ttl_seconds: int = 30
     failover_enabled: bool = True
+
+    # ---------- 平台级统一推理（兜底通道，proxy 服务使用） ----------
+    # 用户未绑定自有 Key 时由平台 Key 代付转发；三者必须同时配置，
+    # platform_llm_provider 留空 = 关闭兜底（未绑 Key 的用户请求收到 404 引导绑 Key）
+    platform_llm_provider: str = ""   # openai / deepseek / claude / gemini
+    platform_llm_api_key: str = ""    # 厂商控制台申请的真实 Key
+    platform_llm_model: str = ""      # 真实型号名，如 deepseek-chat / gpt-4o-mini
 
     # ---------- 第三方搜索 ----------
     web_search_provider: str = "serper"
@@ -127,16 +140,37 @@ class Settings(BaseSettings):
     # 用 str 而非 list[str]：pydantic-settings 对复杂类型会先按 JSON 解码，CSV 字符串会解析失败
     cors_origins: str = "*"
 
-    @field_validator("vllm_routes", mode="before")
+    @field_validator("vllm_routes", "billing_webhook_secrets", mode="before")
     @classmethod
-    def _parse_vllm_routes(cls, v: Any) -> Any:
-        """支持 JSON 字符串形式（.env 中 VLLM_ROUTES）。"""
+    def _parse_json_dict(cls, v: Any) -> Any:
+        """支持 JSON 字符串形式（.env 中 VLLM_ROUTES / BILLING_WEBHOOK_SECRETS）。"""
         if isinstance(v, str):
             v = v.strip()
             if not v:
                 return {}
             return json.loads(v)
         return v
+
+    @model_validator(mode="after")
+    def _check_platform_llm_triplet(self) -> "Settings":
+        """平台级兜底 Key：三个字段必须同配同空，provider 必须在支持列表内。"""
+        triplet = (
+            self.platform_llm_provider,
+            self.platform_llm_api_key,
+            self.platform_llm_model,
+        )
+        if any(triplet) and not all(triplet):
+            raise ValueError(
+                "PLATFORM_LLM_PROVIDER / PLATFORM_LLM_API_KEY / PLATFORM_LLM_MODEL "
+                "必须同时配置或同时留空"
+            )
+        supported = ("openai", "deepseek", "claude", "gemini", "moonshot")
+        if self.platform_llm_provider and self.platform_llm_provider not in supported:
+            raise ValueError(
+                f"PLATFORM_LLM_PROVIDER 仅支持 {'/'.join(supported)}，"
+                f"当前值: {self.platform_llm_provider!r}"
+            )
+        return self
 
     @model_validator(mode="after")
     def _reject_placeholder_secrets_outside_dev(self) -> "Settings":

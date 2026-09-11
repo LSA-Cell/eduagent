@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/auth_provider.dart';
 import '../features/auth/login_page.dart';
 import '../features/auth/register_page.dart';
+import '../features/billing/billing_page.dart';
 import '../features/chat/chat_page.dart';
 import '../features/flashcards/flashcards_page.dart';
 import '../features/mistakes/mistakes_page.dart';
@@ -61,6 +62,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // 全屏独立页
       GoRoute(path: '/voice', builder: (_, __) => const VoicePage()),
       GoRoute(path: '/plans', builder: (_, __) => const PlansPage()),
+      GoRoute(path: '/billing', builder: (_, __) => const BillingPage()),
       // 学情分析报告（由学情分析工具 Sheet 生成后携带报告数据进入）
       GoRoute(
         path: '/teacher/report',

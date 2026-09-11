@@ -12,6 +12,7 @@ import pytest
 
 from app import deps
 from app.main import create_app
+from app.services.quota import InMemoryQuotaStore
 from app.services.store import InMemoryApiKeyStore
 
 from eduagent_shared.security.crypto import encrypt_key
@@ -87,9 +88,16 @@ def seed_key(key_store):
 
 
 @pytest.fixture
-def app(key_store):
+def quota_store() -> InMemoryQuotaStore:
+    """额度闸门仓储（默认 seed free 档：300¢ 额度 + 低成本模型准入）。"""
+    return InMemoryQuotaStore()
+
+
+@pytest.fixture
+def app(key_store, quota_store):
     application = create_app()
     application.dependency_overrides[deps.get_key_store] = lambda: key_store
+    application.dependency_overrides[deps.get_quota_store] = lambda: quota_store
     application.state.http_client = httpx.AsyncClient()
     return application
 

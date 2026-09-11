@@ -335,3 +335,80 @@ class LearningAnalysis(Base, TimestampMixin):
     summary: Mapped[str | None] = mapped_column(Text)
     metrics: Mapped[dict] = mapped_column(JSONB, default=dict)  # 指标：正确率/时长/薄弱点等
     suggestions: Mapped[list] = mapped_column(JSONB, default=list)
+
+
+# ----------------------------------------------------------------------------
+# Billing v1（docs/billing/spec.md）：额度单位 = USD 成本美分，售价 = CNY 分
+# ----------------------------------------------------------------------------
+
+
+class Plan(Base, TimestampMixin):
+    """套餐定义（全局只读配置表，种子数据维护）。"""
+
+    __tablename__ = "plans"
+
+    id: Mapped[str] = mapped_column(String(30), primary_key=True)  # free / pro / teacher_pro
+    name: Mapped[str] = mapped_column(String(50))
+    price_cents: Mapped[int] = mapped_column(Integer)  # 月价（CNY 分，展示用）
+    currency: Mapped[str] = mapped_column(String(8), default="CNY")
+    monthly_quota_cents: Mapped[int] = mapped_column(BigInteger)  # 月额度（USD 成本美分）
+    allowed_models: Mapped[list] = mapped_column(JSONB, default=list)  # 空数组 = 全开放
+    features: Mapped[dict] = mapped_column(JSONB, default=dict)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class Subscription(Base, TimestampMixin):
+    """订阅状态。status=active 最多一条（服务层守卫）；读取时惰性过期。"""
+
+    __tablename__ = "subscriptions"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    plan_id: Mapped[str] = mapped_column(ForeignKey("plans.id"))
+    status: Mapped[str] = mapped_column(String(20))  # active / canceled / expired
+    channel: Mapped[str] = mapped_column(String(20))  # mock / apple_iap / ... / admin
+    channel_sub_id: Mapped[str | None] = mapped_column(String(100))
+    current_period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    current_period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    auto_renew: Mapped[bool] = mapped_column(Boolean, default=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, onupdate=_utcnow
+    )
+
+
+class Order(Base, TimestampMixin):
+    """订单。channel_txn_id 唯一约束 = webhook 幂等键。"""
+
+    __tablename__ = "orders"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    plan_id: Mapped[str] = mapped_column(ForeignKey("plans.id"))
+    amount_cents: Mapped[int] = mapped_column(Integer)
+    currency: Mapped[str] = mapped_column(String(8), default="CNY")
+    channel: Mapped[str] = mapped_column(String(20))
+    channel_txn_id: Mapped[str | None] = mapped_column(String(100), unique=True)
+    status: Mapped[str] = mapped_column(String(20))  # pending / paid / refunded / failed
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class QuotaPeriod(Base):
+    """额度周期账本（每月一行；不存在时按 free plan 惰性创建）。"""
+
+    __tablename__ = "quota_periods"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    period_start: Mapped[date] = mapped_column(Date, primary_key=True)  # 当月 1 号
+    quota_cents: Mapped[int] = mapped_column(BigInteger)
+    used_cents: Mapped[int] = mapped_column(BigInteger, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, onupdate=_utcnow
+    )

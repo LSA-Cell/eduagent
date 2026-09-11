@@ -22,3 +22,4 @@ os.environ.setdefault(
 os.environ.setdefault("INTERNAL_SERVICE_TOKEN", "test-internal-token")
 os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost:5432/test")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/15")
+os.environ.setdefault("BILLING_WEBHOOK_SECRETS", '{"mock": "test-webhook-secret"}')

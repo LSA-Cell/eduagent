@@ -15,7 +15,7 @@ from eduagent_shared.logging import configure_logging, get_logger
 from .errors import register_exception_handlers
 from .middleware import RateLimitMiddleware, RequestLoggingMiddleware
 from .ratelimit import RateTierResolver, SlidingWindowLimiter
-from .routers import api_keys, auth, business, chat, models, users
+from .routers import api_keys, auth, billing, business, chat, models, users
 from .ws import router as ws_router
 
 log = get_logger("bff.main")
@@ -75,6 +75,7 @@ def create_app() -> FastAPI:
     app.include_router(chat.router, prefix="/api/v1")
     app.include_router(models.router, prefix="/api/v1")
     app.include_router(business.router, prefix="/api/v1")
+    app.include_router(billing.router, prefix="/api/v1")
     app.include_router(ws_router)
 
     @app.get("/health", include_in_schema=False)

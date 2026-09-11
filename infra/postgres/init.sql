@@ -947,3 +947,109 @@ CREATE POLICY automation_hooks_owner_isolation ON automation_hooks FOR ALL
 -- ---------- Wave D2 表授权（沿用第 8 节应用角色） ----------
 GRANT SELECT, INSERT, UPDATE, DELETE ON dream_runs, automation_hooks TO eduagent_app;
 GRANT SELECT ON feature_gates, output_styles TO eduagent_app;
+
+-- ============================================================================
+-- 11. Billing v1：会员订阅与支付（docs/billing/spec.md）
+-- ----------------------------------------------------------------------------
+-- 额度单位 = USD 成本美分（与 cost_ledger / pricing.py 一致）；
+-- 套餐售价以 CNY 分展示，两者解耦。
+-- ============================================================================
+
+-- 11.1 套餐定义（全局只读配置表，种子数据维护，运营改套餐 = 改 SQL 重部署）
+CREATE TABLE IF NOT EXISTS plans (
+    id                   VARCHAR(30) PRIMARY KEY,     -- free / pro / teacher_pro
+    name                 VARCHAR(50) NOT NULL,
+    price_cents          INTEGER NOT NULL,            -- 月价（CNY 分，展示用）
+    currency             VARCHAR(8) NOT NULL DEFAULT 'CNY',
+    monthly_quota_cents  BIGINT NOT NULL,             -- 月额度（USD 成本美分）
+    allowed_models       JSONB NOT NULL DEFAULT '[]', -- 空数组 = 全开放
+    features             JSONB NOT NULL DEFAULT '{}', -- 功能开关
+    sort_order           INTEGER NOT NULL DEFAULT 0,
+    is_active            BOOLEAN NOT NULL DEFAULT true,
+    created_at           TIMESTAMP NOT NULL DEFAULT now()
+);
+
+-- 11.2 订阅状态（一个用户可有多条历史，status=active 最多一条，由服务层守卫）
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id              UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    plan_id              VARCHAR(30) NOT NULL REFERENCES plans(id),
+    status               VARCHAR(20) NOT NULL,        -- active / canceled / expired
+    channel              VARCHAR(20) NOT NULL,        -- mock / apple_iap / google_play / stripe / alipay / wechat / admin
+    channel_sub_id       VARCHAR(100),                -- 渠道侧订阅号（对账用）
+    current_period_start TIMESTAMP NOT NULL,
+    current_period_end   TIMESTAMP NOT NULL,
+    auto_renew           BOOLEAN NOT NULL DEFAULT true,
+    created_at           TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at           TIMESTAMP NOT NULL DEFAULT now()
+);
+
+-- 11.3 订单（channel_txn_id 唯一约束 = webhook 幂等键）
+CREATE TABLE IF NOT EXISTS orders (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    plan_id         VARCHAR(30) NOT NULL REFERENCES plans(id),
+    amount_cents    INTEGER NOT NULL,
+    currency        VARCHAR(8) NOT NULL DEFAULT 'CNY',
+    channel         VARCHAR(20) NOT NULL,
+    channel_txn_id  VARCHAR(100) UNIQUE,              -- 渠道交易号，幂等键
+    status          VARCHAR(20) NOT NULL,             -- pending / paid / refunded / failed
+    created_at      TIMESTAMP NOT NULL DEFAULT now(),
+    paid_at         TIMESTAMP
+);
+
+-- 11.4 额度周期账本（每月一行；不存在时按 free plan 惰性创建）
+CREATE TABLE IF NOT EXISTS quota_periods (
+    user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    period_start DATE NOT NULL,                       -- 当月 1 号
+    quota_cents  BIGINT NOT NULL,
+    used_cents   BIGINT NOT NULL DEFAULT 0,
+    created_at   TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at   TIMESTAMP NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, period_start)
+);
+
+-- ---------- Billing 索引 ----------
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user    ON subscriptions(user_id, status, current_period_end DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_user           ON orders(user_id, created_at DESC);
+
+-- ---------- Billing 种子数据（三档，幂等） ----------
+INSERT INTO plans (id, name, price_cents, monthly_quota_cents, allowed_models, features, sort_order) VALUES
+    ('free',        '免费版',   0,    300,
+     '["deepseek-chat", "deepseek-reasoner", "gpt-4o-mini", "gemini-2.5-flash", "gemini-1.5-flash", "claude-3-5-haiku"]',
+     '{"rag_max_docs": 3, "docgen_per_month": 5}', 0),
+    ('pro',         'Pro 会员', 6800, 3000,
+     '[]',
+     '{"rag_max_docs": 50, "docgen_per_month": 100}', 1),
+    ('teacher_pro', '教师版',   9800, 5000,
+     '[]',
+     '{"rag_max_docs": 200, "docgen_per_month": 300, "teacher_tools": true}', 2)
+ON CONFLICT (id) DO NOTHING;
+
+-- ---------- Billing RLS ----------
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscriptions FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY subscriptions_owner_isolation ON subscriptions FOR ALL
+    USING (user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid)
+    WITH CHECK (user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid);
+
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY orders_owner_isolation ON orders FOR ALL
+    USING (user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid)
+    WITH CHECK (user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid);
+
+ALTER TABLE quota_periods ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quota_periods FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY quota_periods_owner_isolation ON quota_periods FOR ALL
+    USING (user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid)
+    WITH CHECK (user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid);
+
+-- plans：全局只读配置表，不启用 RLS（同 feature_gates / output_styles）
+
+-- ---------- Billing 表授权（沿用第 8 节应用角色） ----------
+GRANT SELECT, INSERT, UPDATE, DELETE ON subscriptions, orders, quota_periods TO eduagent_app;
+GRANT SELECT ON plans TO eduagent_app;

@@ -456,7 +456,7 @@ class _StudyPlanSheetState extends ConsumerState<StudyPlanSheet> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: _subject,
+            initialValue: _subject,
             decoration: const InputDecoration(labelText: '学科'),
             items: [
               for (final s in _subjects)

@@ -96,6 +96,19 @@ class ProfilePage extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
 
+          // 会员与额度（Billing v1：套餐/订阅/平台额度）
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.workspace_premium_outlined,
+                  color: Theme.of(context).colorScheme.primary),
+              title: const Text('会员与额度'),
+              subtitle: const Text('套餐、订阅状态与本月平台额度'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/billing'),
+            ),
+          ),
+          const SizedBox(height: 12),
+
           // 身份切换
           _SectionCard(
             title: '身份',
@@ -128,7 +141,7 @@ class ProfilePage extends ConsumerWidget {
                   loading: () => const LinearProgressIndicator(),
                   error: (_, __) => const Text('模型列表加载失败'),
                   data: (models) => DropdownButtonFormField<String>(
-                    value: models.contains(user?.selectedModel)
+                    initialValue: models.contains(user?.selectedModel)
                         ? user?.selectedModel
                         : models.first,
                     decoration: const InputDecoration(labelText: '默认模型'),

@@ -7,7 +7,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-SUPPORTED_PROVIDERS = ("openai", "deepseek", "claude", "gemini")
+SUPPORTED_PROVIDERS = ("openai", "deepseek", "claude", "gemini", "moonshot")
 
 
 class ChatMessage(BaseModel):
@@ -20,7 +20,7 @@ class ProxyChatRequest(BaseModel):
     """POST /proxy/chat 入参（由推理网关注入 user_id 后转发）。"""
 
     user_id: uuid.UUID
-    provider: Literal["openai", "deepseek", "claude", "gemini"] = "openai"
+    provider: Literal["openai", "deepseek", "claude", "gemini", "moonshot"] = "openai"
     model: str
     messages: list[ChatMessage] = Field(min_length=1)
     stream: bool = False

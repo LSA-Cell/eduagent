@@ -1,4 +1,5 @@
 /// 学情看板数据模型
+library;
 
 /// 成绩趋势点
 class ScorePoint {

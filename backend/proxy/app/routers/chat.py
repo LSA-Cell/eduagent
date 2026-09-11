@@ -10,10 +10,16 @@ import httpx
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from eduagent_shared.config import get_settings
 from eduagent_shared.logging import get_logger
 from eduagent_shared.security.crypto import DecryptError, decrypt_key
 
-from ..deps import get_http_client, get_key_store, require_internal_token
+from ..deps import (
+    get_http_client,
+    get_key_store,
+    get_quota_store,
+    require_internal_token,
+)
 from ..errors import ProxyError
 from ..schemas import ProxyChatRequest
 from ..services.pricing import cost_cents, estimate_tokens
@@ -23,6 +29,12 @@ from ..services.providers import (
     get_adapter,
     iter_sse,
     message_text,
+)
+from ..services.quota import (
+    QuotaContext,
+    QuotaStore,
+    charge_platform_quota,
+    check_platform_quota,
 )
 from ..services.store import ApiKeyStore
 
@@ -85,40 +97,85 @@ async def _charge(
         log.exception("proxy_charge_failed", provider=provider, model=model)
 
 
+async def _charge_platform(
+    quota_store: QuotaStore,
+    qctx: QuotaContext,
+    *,
+    provider: str,
+    model: str,
+    usage: dict | None,
+    prompt_text: str,
+    completion_text: str,
+) -> None:
+    """平台兜底通道：按实际成本扣减用户月度额度（Billing v1 软闸门后置记账）。"""
+    try:
+        if usage:
+            prompt_tokens = int(usage.get("prompt_tokens") or 0)
+            completion_tokens = int(usage.get("completion_tokens") or 0)
+        else:
+            prompt_tokens = estimate_tokens(prompt_text)
+            completion_tokens = estimate_tokens(completion_text)
+        cents = cost_cents(provider, model, prompt_tokens, completion_tokens)
+        await charge_platform_quota(quota_store, qctx, cents)
+    except Exception:
+        log.exception("platform_quota_charge_failed", provider=provider, model=model)
+
+
 @router.post("/chat")
 async def proxy_chat(
     payload: ProxyChatRequest,
     store: ApiKeyStore = Depends(get_key_store),
+    quota_store: QuotaStore = Depends(get_quota_store),
     client: httpx.AsyncClient = Depends(get_http_client),
 ):
     record = await store.get_active(payload.user_id, payload.provider)
-    if record is None:
+    settings = get_settings()
+    qctx: QuotaContext | None = None
+
+    if record is None and settings.platform_llm_provider:
+        # 平台级兜底：用户未绑定自有 Key 时，由平台统一 Key 代付转发。
+        # Billing v1：转发前过会员额度闸门（模型准入 + 月度额度），调用后按实际成本扣额度。
+        provider = settings.platform_llm_provider
+        model = settings.platform_llm_model
+        api_key = settings.platform_llm_api_key
+        qctx = await check_platform_quota(quota_store, payload.user_id, model)
+        log.info(
+            "proxy_platform_fallback",
+            user_id=str(payload.user_id),
+            provider=provider,
+            model=model,
+            plan_id=qctx.plan_id,
+        )
+    elif record is None:
         raise ProxyError(
             404,
             "未找到该服务商的可用 API Key，请先在 App 中绑定",
             "invalid_request_error",
             "api_key_not_found",
         )
-    if record.monthly_budget is not None and record.used_budget >= record.monthly_budget:
-        raise ProxyError(
-            402,
-            "该服务商月度额度已用尽，请调整预算或更换推理通道",
-            "budget_exceeded",
-            "monthly_budget_exceeded",
-        )
+    else:
+        provider = payload.provider
+        model = payload.model
+        if record.monthly_budget is not None and record.used_budget >= record.monthly_budget:
+            raise ProxyError(
+                402,
+                "该服务商月度额度已用尽，请调整预算或更换推理通道",
+                "budget_exceeded",
+                "monthly_budget_exceeded",
+            )
 
-    # 安全红线：明文 Key 只存在于本作用域局部变量，不落库、不写日志、不进响应体
-    try:
-        api_key = decrypt_key(record.encrypted_key)
-    except DecryptError:
-        log.error("api_key_decrypt_failed", provider=payload.provider, key_id=str(record.id))
-        raise ProxyError(
-            500, "API Key 解密失败，请重新绑定", "server_error", "key_decrypt_failed"
-        ) from None
+        # 安全红线：明文 Key 只存在于本作用域局部变量，不落库、不写日志、不进响应体
+        try:
+            api_key = decrypt_key(record.encrypted_key)
+        except DecryptError:
+            log.error("api_key_decrypt_failed", provider=provider, key_id=str(record.id))
+            raise ProxyError(
+                500, "API Key 解密失败，请重新绑定", "server_error", "key_decrypt_failed"
+            ) from None
 
-    adapter = get_adapter(payload.provider)
+    adapter = get_adapter(provider)
     request = adapter.build_request(
-        model=payload.model,
+        model=model,
         messages=payload.messages,
         stream=payload.stream,
         max_tokens=payload.max_tokens,
@@ -126,14 +183,22 @@ async def proxy_chat(
     )
     log.info(
         "proxy_forward",
-        provider=payload.provider,
-        model=payload.model,
+        provider=provider,
+        model=model,
         stream=payload.stream,
     )
 
     if payload.stream:
-        return await _open_stream(request, adapter, payload, store, client, record, api_key)
-    return await _call(request, adapter, payload, store, client, record, api_key)
+        return await _open_stream(
+            request, adapter, payload, store, client, record, api_key,
+            provider=provider, model=model,
+            quota_store=quota_store, qctx=qctx,
+        )
+    return await _call(
+        request, adapter, payload, store, client, record, api_key,
+        provider=provider, model=model,
+        quota_store=quota_store, qctx=qctx,
+    )
 
 
 async def _call(
@@ -142,14 +207,19 @@ async def _call(
     payload: ProxyChatRequest,
     store: ApiKeyStore,
     client: httpx.AsyncClient,
-    record: Any,
+    record: Any | None,
     api_key: str,
+    *,
+    provider: str,
+    model: str,
+    quota_store: QuotaStore,
+    qctx: QuotaContext | None,
 ) -> JSONResponse:
     """非流式：上游 JSON → OpenAI chat.completion。"""
     try:
         resp = await client.post(request.url, json=request.body, headers=request.headers)
     except httpx.HTTPError as exc:
-        log.warning("upstream_connect_failed", provider=payload.provider, error=str(exc))
+        log.warning("upstream_connect_failed", provider=provider, error=str(exc))
         raise ProxyError(
             502, "上游厂商连接失败", "upstream_error", "upstream_unreachable"
         ) from exc
@@ -161,20 +231,31 @@ async def _call(
         raise ProxyError(
             502, "上游响应解析失败", "upstream_error", "invalid_upstream_response"
         ) from None
-    completion = adapter.convert_completion(data, model=payload.model)
+    completion = adapter.convert_completion(data, model=model)
     completion_text = ""
     choices = completion.get("choices") or []
     if choices:
         completion_text = (choices[0].get("message") or {}).get("content") or ""
-    await _charge(
-        store,
-        key_id=record.id,
-        provider=payload.provider,
-        model=payload.model,
-        usage=completion.get("usage"),
-        prompt_text="".join(message_text(m.content) for m in payload.messages),
-        completion_text=completion_text,
-    )
+    if record is not None:  # 用户 Key 通道：记 key 行额度
+        await _charge(
+            store,
+            key_id=record.id,
+            provider=provider,
+            model=model,
+            usage=completion.get("usage"),
+            prompt_text="".join(message_text(m.content) for m in payload.messages),
+            completion_text=completion_text,
+        )
+    elif qctx is not None:  # 平台兜底通道：扣会员月度额度
+        await _charge_platform(
+            quota_store,
+            qctx,
+            provider=provider,
+            model=model,
+            usage=completion.get("usage"),
+            prompt_text="".join(message_text(m.content) for m in payload.messages),
+            completion_text=completion_text,
+        )
     return JSONResponse(completion)
 
 
@@ -184,8 +265,13 @@ async def _open_stream(
     payload: ProxyChatRequest,
     store: ApiKeyStore,
     client: httpx.AsyncClient,
-    record: Any,
+    record: Any | None,
     api_key: str,
+    *,
+    provider: str,
+    model: str,
+    quota_store: QuotaStore,
+    qctx: QuotaContext | None,
 ) -> StreamingResponse:
     """流式：上游 SSE → 统一 OpenAI chunk，末尾补 usage chunk 与 [DONE]。"""
     http_request = client.build_request(
@@ -194,7 +280,7 @@ async def _open_stream(
     try:
         resp = await client.send(http_request, stream=True)
     except httpx.HTTPError as exc:
-        log.warning("upstream_connect_failed", provider=payload.provider, error=str(exc))
+        log.warning("upstream_connect_failed", provider=provider, error=str(exc))
         raise ProxyError(
             502, "上游厂商连接失败", "upstream_error", "upstream_unreachable"
         ) from exc
@@ -203,7 +289,7 @@ async def _open_stream(
         await resp.aclose()
         raise _map_upstream_error(resp, body, api_key)
 
-    converter = adapter.new_stream_converter(model=payload.model)
+    converter = adapter.new_stream_converter(model=model)
     prompt_text = "".join(message_text(m.content) for m in payload.messages)
 
     async def gen() -> AsyncIterator[bytes]:
@@ -221,22 +307,33 @@ async def _open_stream(
                         break
             except httpx.HTTPError:
                 # 流中途失败：内容已部分下发，优雅收尾（计费仍在 finally 执行）
-                log.warning("upstream_stream_broken", provider=payload.provider)
+                log.warning("upstream_stream_broken", provider=provider)
             usage_chunk = converter.usage_chunk()
             if usage_chunk is not None:
                 yield f"data: {json.dumps(usage_chunk, ensure_ascii=False)}\n\n".encode()
             yield b"data: [DONE]\n\n"
         finally:
             await resp.aclose()
-            await _charge(
-                store,
-                key_id=record.id,
-                provider=payload.provider,
-                model=payload.model,
-                usage=converter.usage,
-                prompt_text=prompt_text,
-                completion_text="".join(collected),
-            )
+            if record is not None:  # 用户 Key 通道：记 key 行额度
+                await _charge(
+                    store,
+                    key_id=record.id,
+                    provider=provider,
+                    model=model,
+                    usage=converter.usage,
+                    prompt_text=prompt_text,
+                    completion_text="".join(collected),
+                )
+            elif qctx is not None:  # 平台兜底通道：扣会员月度额度
+                await _charge_platform(
+                    quota_store,
+                    qctx,
+                    provider=provider,
+                    model=model,
+                    usage=converter.usage,
+                    prompt_text=prompt_text,
+                    completion_text="".join(collected),
+                )
 
     return StreamingResponse(
         gen(),

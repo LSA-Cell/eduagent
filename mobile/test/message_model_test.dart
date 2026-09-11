@@ -70,7 +70,7 @@ void main() {
         createdAt: DateTime.utc(2026),
         status: MessageStatus.streaming,
       );
-      final appended = msg.copyWith(content: msg.content + '好');
+      final appended = msg.copyWith(content: '${msg.content}好');
       expect(appended.content, '你好');
       expect(appended.status, MessageStatus.streaming);
       expect(appended.id, msg.id);

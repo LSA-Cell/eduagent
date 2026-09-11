@@ -28,6 +28,7 @@ OPENAI_BASE_URL = "https://api.openai.com"
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 CLAUDE_BASE_URL = "https://api.anthropic.com"
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com"
+MOONSHOT_BASE_URL = "https://api.moonshot.cn"
 
 ANTHROPIC_VERSION = "2023-06-01"
 CLAUDE_DEFAULT_MAX_TOKENS = 1024  # Anthropic messages API 必填 max_tokens
@@ -422,6 +423,7 @@ class GeminiAdapter:
 _ADAPTERS: dict[str, ProviderAdapter] = {
     "openai": OpenAICompatAdapter(OPENAI_BASE_URL, "/v1/chat/completions"),
     "deepseek": OpenAICompatAdapter(DEEPSEEK_BASE_URL, "/chat/completions"),
+    "moonshot": OpenAICompatAdapter(MOONSHOT_BASE_URL, "/v1/chat/completions"),
     "claude": ClaudeAdapter(),
     "gemini": GeminiAdapter(),
 }

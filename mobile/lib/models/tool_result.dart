@@ -1,4 +1,5 @@
 /// 工具结果相关模型（批改 / PPT / 教案 / 试卷预览）
+library;
 
 /// 批改圈注：后端返回的归一化坐标（0~1，相对图片宽高）
 class GradingAnnotation {

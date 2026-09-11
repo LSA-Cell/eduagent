@@ -145,6 +145,8 @@ services:
         condition: service_healthy
       docgen:
         condition: service_healthy
+      billing:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python3", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
@@ -314,6 +316,31 @@ services:
     networks:
       - net_app
       - net_inference              # 作为外部推理出口，与 vLLM 同层隔离
+
+  billing:
+    image: eduagent/billing:dev
+    container_name: eduagent-billing
+    build:
+      context: ./backend
+      dockerfile: billing/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:8006:8006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8006/health', timeout=5)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - net_app                    # BFF 经内部网络调用（X-Internal-Token）
+      - net_data                   # 订阅/订单/额度表读写
 
   docgen:
     image: eduagent/docgen:dev
