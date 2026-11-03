@@ -63,13 +63,12 @@ async def submit_teacher_certification(
 ) -> dict[str, str]:
     """教师认证材料提交（占位实现，返回 202 受理）。
 
-    文件由移动端先经 /kb/documents/upload-url 预签名上传至 MinIO，这里只登记
-    材料地址。审核工作流（人工/异步任务）后续迭代接入：审核通过后再置
+    文件由移动端先经预签名上传至 MinIO；当前只返回受理状态，不持久化材料。
+    审核工作流（人工/异步任务）后续迭代接入：审核通过后再置
     users.is_teacher = true 与 teacher_verified_at，当前不做状态变更。
     """
     log.info(
         "teacher_certification_submitted",
         user_id=str(user.id),
-        file_url=payload.file_url,
     )
     return {"status": "pending_review"}

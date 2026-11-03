@@ -8,8 +8,15 @@ mastery 列在每次复习时按答对/答错更新（见 mistake_service.update
 
 from __future__ import annotations
 
+import csv
+import io
+import re
+import uuid
+import xml.etree.ElementTree as ET
+import zipfile
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional, Sequence
+from urllib.parse import urlsplit
 
 from sqlalchemy import select
 
@@ -77,12 +84,15 @@ async def aggregate_mistake_stats(
     session: Any,
     user_ids: Sequence[str],
     days: Optional[int] = None,
+    mistake_ids: Optional[Sequence[uuid.UUID]] = None,
 ) -> dict[str, Any]:
     """聚合一组学生的错题统计，供学情分析 LLM 生成报告。
 
     data_source 约定：{"student_ids": [...], "days": 30}（可选）。
     """
     stmt = select(MistakeRecord).where(MistakeRecord.user_id.in_([str(u) for u in user_ids]))
+    if mistake_ids is not None:
+        stmt = stmt.where(MistakeRecord.id.in_(list(mistake_ids)))
     if days:
         since = datetime.now(timezone.utc) - timedelta(days=days)
         stmt = stmt.where(MistakeRecord.created_at >= since)
@@ -109,3 +119,127 @@ async def aggregate_mistake_stats(
         "by_subject": by_subject,
         "trend": [{"date": d, "count": c} for d, c in sorted(trend.items())],
     }
+
+
+MAX_REPORT_BYTES = 5 * 1024 * 1024
+MAX_REPORT_ROWS = 10_000
+MAX_REPORT_COLUMNS = 100
+_SCORE_HEADERS = {"score", "scores", "mark", "marks", "grade", "成绩", "分数", "得分",
+                  "总分", "语文", "数学", "英语", "物理", "化学", "生物", "历史", "政治", "地理"}
+
+
+def report_object_key(file_url: str, user_id: str, public_endpoint: str,
+                      public_ssl: bool, bucket: str) -> tuple[str, str]:
+    """只从本用户预期的签名地址提取对象键；绝不请求 URL 指定的主机。"""
+    parsed = urlsplit(file_url)
+    expected_scheme = "https" if public_ssl else "http"
+    if parsed.scheme != expected_scheme or parsed.netloc != public_endpoint:
+        raise ValueError("invalid report file origin")
+    # 签名仅用于确认输入形态；任务排队后它可能过期。真正的读取使用内部
+    # MinIO 客户端，并且对象键必须严格属于当前用户。
+    if "X-Amz-Signature=" not in parsed.query:
+        raise ValueError("report file URL is unsigned")
+    match = re.fullmatch(
+        rf"/{re.escape(bucket)}/(u/{re.escape(user_id)}/[0-9a-f]{{32}}\.(csv|xlsx))",
+        parsed.path,
+    )
+    if match is None:
+        raise ValueError("invalid report file key")
+    return match.group(1), match.group(2)
+
+
+def _score_stats(rows: Sequence[Sequence[str]], source: str) -> dict[str, Any]:
+    if not rows:
+        raise ValueError("empty score file")
+    headers = [str(value).strip().lower() for value in rows[0]]
+    score_columns = [i for i, name in enumerate(headers)
+                     if name in _SCORE_HEADERS or name.endswith(("成绩", "分数", "得分"))]
+    if not score_columns:
+        raise ValueError("score column missing")
+    scores: list[float] = []
+    student_rows = 0
+    for row in rows[1:]:
+        if not any(str(value).strip() for value in row):
+            continue
+        student_rows += 1
+        for index in score_columns:
+            if index >= len(row) or not str(row[index]).strip():
+                continue
+            try:
+                score = float(str(row[index]).strip())
+            except ValueError as exc:
+                raise ValueError("non-numeric score") from exc
+            if not 0 <= score <= 1000:
+                raise ValueError("score outside supported range")
+            scores.append(score)
+    if not scores:
+        raise ValueError("score file has no scores")
+    return {
+        "source": source,
+        "student_count": student_rows,
+        "score_count": len(scores),
+        "average_score": round(sum(scores) / len(scores), 2),
+        "minimum_score": min(scores),
+        "maximum_score": max(scores),
+    }
+
+
+def aggregate_score_file(data: bytes, extension: str) -> dict[str, Any]:
+    """对有限大小的 CSV/XLSX 成绩表统计数值，拒绝未知或超大输入。"""
+    if not data or len(data) > MAX_REPORT_BYTES:
+        raise ValueError("report file size outside supported range")
+    if extension == "csv":
+        rows = list(csv.reader(io.StringIO(data.decode("utf-8-sig"))))
+    elif extension == "xlsx":
+        with zipfile.ZipFile(io.BytesIO(data)) as workbook:
+            shared: list[str] = []
+            if "xl/sharedStrings.xml" in workbook.namelist():
+                info = workbook.getinfo("xl/sharedStrings.xml")
+                if info.file_size > MAX_REPORT_BYTES:
+                    raise ValueError("xlsx strings too large")
+                root = ET.fromstring(workbook.read(info))
+                shared = ["".join(node.itertext()) for node in root]
+            sheets = sorted(name for name in workbook.namelist()
+                            if re.fullmatch(r"xl/worksheets/sheet\d+\.xml", name))
+            if not sheets:
+                raise ValueError("xlsx has no worksheet")
+            info = workbook.getinfo(sheets[0])
+            if info.file_size > MAX_REPORT_BYTES:
+                raise ValueError("xlsx worksheet too large")
+            root = ET.fromstring(workbook.read(info))
+            namespace = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+            rows = []
+            for row in root.iter(namespace + "row"):
+                cells: list[str] = []
+                for cell in row.findall(namespace + "c"):
+                    address = cell.get("r", "")
+                    letters = re.match(r"[A-Z]+", address)
+                    if letters is None:
+                        continue
+                    index = 0
+                    for letter in letters.group():
+                        index = index * 26 + ord(letter) - ord("A") + 1
+                    index -= 1
+                    if index >= MAX_REPORT_COLUMNS:
+                        raise ValueError("xlsx has too many columns")
+                    while len(cells) <= index:
+                        cells.append("")
+                    value = cell.find(namespace + "v")
+                    if cell.get("t") == "inlineStr":
+                        inline = cell.find(namespace + "is")
+                        cells[index] = "".join(inline.itertext()) if inline is not None else ""
+                    elif value is not None and cell.get("t") == "s":
+                        shared_index = int(value.text or "-1")
+                        if not 0 <= shared_index < len(shared):
+                            raise ValueError("invalid xlsx shared string index")
+                        cells[index] = shared[shared_index]
+                    elif value is not None:
+                        cells[index] = value.text or ""
+                rows.append(cells)
+                if len(rows) > MAX_REPORT_ROWS:
+                    raise ValueError("xlsx has too many rows")
+    else:
+        raise ValueError("unsupported report file format")
+    if len(rows) > MAX_REPORT_ROWS or any(len(row) > MAX_REPORT_COLUMNS for row in rows):
+        raise ValueError("report file exceeds row or column limit")
+    return _score_stats(rows, extension)

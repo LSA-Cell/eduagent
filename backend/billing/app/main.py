@@ -1,6 +1,6 @@
 """Billing 服务入口（端口 8006）。
 
-职责：会员套餐 / 订阅状态 / 订单 / 支付渠道 webhook（docs/billing/spec.md）。
+职责：会员套餐 / 订阅状态 / 订单 / 支付渠道 webhook（指导/后端设计/计费/spec.md）。
 内部服务：仅 net_app 网络可达；除 /billing/webhooks/* 外一律要求 X-Internal-Token。
 """
 

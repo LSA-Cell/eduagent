@@ -1,4 +1,4 @@
-"""请求 / 响应模型（契约见 docs/billing/spec.md §4）。"""
+"""请求 / 响应模型（契约见 指导/后端设计/计费/spec.md §4）。"""
 
 from __future__ import annotations
 

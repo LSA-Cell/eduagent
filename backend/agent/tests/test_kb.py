@@ -64,6 +64,13 @@ def app_and_session(fake_session: FakeSession, monkeypatch):
     removed: list[str] = []
     monkeypatch.setattr(storage_service, "create_presigned_put", _fake_presigned_put)
     monkeypatch.setattr(
+        storage_service, "presigned_get",
+        lambda object_key, **kwargs: (
+            f"http://minio:9000/eduagent-uploads/{object_key}"
+            "?X-Amz-Credential=test%2Fscope&X-Amz-Signature=kb-signed-get"
+        ),
+    )
+    monkeypatch.setattr(
         storage_service, "remove_object",
         lambda object_key, **kwargs: removed.append(object_key),
     )
@@ -102,6 +109,8 @@ class TestUploadUrl:
         assert body["object_key"].endswith(".pdf")
         # 预签名 URL 含 object_key，且实际使用的 expires 不超过 3600 秒
         assert body["object_key"] in body["upload_url"]
+        assert body["file_url"].endswith("X-Amz-Signature=kb-signed-get")
+        assert "X-Amz-Credential=test%2Fscope" in body["file_url"]
         assert presigned_calls[0]["expires"] <= 3600
         # 预创建文档行：status=uploading
         documents = [o for o in session.added if isinstance(o, KnowledgeDocument)]

@@ -23,6 +23,17 @@ class Storage:
             secret_key=settings.minio_secret_key,
             secure=settings.minio_use_ssl,
         )
+        public_endpoint = getattr(settings, "minio_public_endpoint", None)
+        self._signing_client = self._client
+        if public_endpoint and public_endpoint != settings.minio_endpoint:
+            # SigV4 signs Host; generate client-facing URLs against the public host.
+            self._signing_client = Minio(
+                public_endpoint,
+                access_key=settings.minio_access_key,
+                secret_key=settings.minio_secret_key,
+                secure=getattr(settings, "minio_public_use_ssl", settings.minio_use_ssl),
+                region="us-east-1",
+            )
         self.default_bucket = settings.minio_bucket_generated
 
     def ensure_bucket(self, bucket: str) -> None:
@@ -52,7 +63,7 @@ class Storage:
     def presigned_get(self, object_key: str, bucket: str | None = None) -> str:
         """生成 GET 预签名 URL，过期 1h。"""
         bucket = bucket or self.default_bucket
-        return self._client.presigned_get_object(
+        return self._signing_client.presigned_get_object(
             bucket, object_key, expires=timedelta(seconds=PRESIGNED_EXPIRES_SECONDS)
         )
 

@@ -1,4 +1,4 @@
-/// Billing 领域模型（契约见 docs/billing/spec.md §4）。
+/// Billing 领域模型（契约见 指导/后端设计/计费/spec.md §4）。
 ///
 /// 额度单位 = USD 成本美分；套餐售价 = CNY 分（两者解耦）。
 library;

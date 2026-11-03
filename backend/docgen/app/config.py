@@ -28,6 +28,8 @@ except ImportError:  # 共享包未安装时的本地降级实现
         redis_url: str = ""
 
         minio_endpoint: str = "localhost:9000"
+        minio_public_endpoint: str = "localhost:9000"
+        minio_public_use_ssl: bool = False
         minio_access_key: str = ""
         minio_secret_key: str = ""
         minio_bucket_uploads: str = "eduagent-uploads"

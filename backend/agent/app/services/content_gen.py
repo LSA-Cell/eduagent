@@ -21,11 +21,15 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
+from eduagent_shared.logging import get_logger
 from eduagent_shared.models import ExamPaper, LearningAnalysis, LessonPlan, Presentation
 
 from app import prompts
 from app.services.docgen_client import DocgenClient
 from app.services.llm_client import LLMClient
+
+log = get_logger("agent.content_gen")
+_FAILURE_MESSAGE = "内容生成失败，请稍后重试"
 
 
 class ContentGenError(RuntimeError):
@@ -283,7 +287,8 @@ async def run_ppt_generation(
         record.object_key = result["file_url"]  # file_url → object_key 列
         record.status = "ready"
     except Exception as exc:  # noqa: BLE001 - 失败落库供轮询
-        outline_store["_error"] = str(exc)[:500]
+        outline_store["_error"] = _FAILURE_MESSAGE
+        log.warning("ppt_generation_failed", error_type=type(exc).__name__)
         record.outline = outline_store
         record.status = "failed"
     await session.flush()
@@ -321,7 +326,8 @@ async def run_lesson_plan_generation(
         record.content = content_store
         record.status = "completed"
     except Exception as exc:  # noqa: BLE001
-        content_store["_error"] = str(exc)[:500]
+        content_store["_error"] = _FAILURE_MESSAGE
+        log.warning("lesson_plan_generation_failed", error_type=type(exc).__name__)
         content_store["_render"] = render_meta
         record.content = content_store
         record.status = "failed"
@@ -367,7 +373,8 @@ async def run_exam_paper_generation(
         record.answer_key = meta
         record.status = "completed"
     except Exception as exc:  # noqa: BLE001
-        meta["_error"] = str(exc)[:500]
+        meta["_error"] = _FAILURE_MESSAGE
+        log.warning("exam_paper_generation_failed", error_type=type(exc).__name__)
         record.answer_key = meta
         record.status = "failed"
     await session.flush()
@@ -407,7 +414,8 @@ async def run_analysis_generation(
         record.suggestions = report.suggestions
     except Exception as exc:  # noqa: BLE001
         metrics["status"] = "failed"
-        metrics["_error"] = str(exc)[:500]
+        metrics["_error"] = _FAILURE_MESSAGE
+        log.warning("analysis_generation_failed", error_type=type(exc).__name__)
         record.metrics = metrics
     await session.flush()
     return {"id": str(getattr(record, "id", "")), "status": metrics.get("status", "failed")}
@@ -425,7 +433,7 @@ def presentation_to_dict(record: Any) -> dict[str, Any]:
         "slides": outline.get("slides") or [],
         "file_url": record.object_key,
         "thumbnail_urls": outline.get("_thumbnails") or [],
-        "status": record.status, "error": outline.get("_error"),
+        "status": record.status, "error": _FAILURE_MESSAGE if outline.get("_error") else None,
         "created_at": _iso(record.created_at),
     }
 
@@ -443,7 +451,7 @@ def lesson_plan_to_dict(record: Any) -> dict[str, Any]:
         "file_url": render.get("file_url"),
         "thumbnail_urls": render.get("thumbnail_urls") or [],
         "status": record.status,
-        "error": (record.content or {}).get("_error"),
+        "error": _FAILURE_MESSAGE if (record.content or {}).get("_error") else None,
         "created_at": _iso(record.created_at),
     }
 
@@ -462,7 +470,7 @@ def exam_paper_to_dict(record: Any) -> dict[str, Any]:
         "quality_issues": meta.get("quality_issues") or [],
         "student_file_url": meta.get("student_file_url"),
         "teacher_file_url": meta.get("teacher_file_url"),
-        "status": record.status, "error": meta.get("_error"),
+        "status": record.status, "error": _FAILURE_MESSAGE if meta.get("_error") else None,
         "created_at": _iso(record.created_at),
     }
 
@@ -477,7 +485,7 @@ def analysis_to_dict(record: Any) -> dict[str, Any]:
         "summary": record.summary, "suggestions": record.suggestions or [],
         "file_url": metrics.get("file_url"),
         "status": metrics.get("status", "generating"),
-        "error": metrics.get("_error"),
+        "error": _FAILURE_MESSAGE if metrics.get("_error") else None,
         "created_at": _iso(record.created_at),
     }
 

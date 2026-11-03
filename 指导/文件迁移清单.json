@@ -1,0 +1,284 @@
+{
+  "status": "complete",
+  "date": "2026-11-03",
+  "scope": "文档、提示词设计文档、协议与安全报告及上一轮设计交付物；不包含运行时配置/代码、依赖清单、机密或构建产物",
+  "content_policy": "保留正文；只更新受迁移影响的文档路径及Markdown相对链接；JSON/YAML/PNG/LICENSE保持字节一致。根README原文归档后另建导航。",
+  "files": [
+    {
+      "old_path": "README.md",
+      "new_path": "指导/架构优化/项目说明.md",
+      "sha256_before": "e2013ace059702f664c1e0897170e08a359c794d16d5bdb6490dcbef98042579",
+      "sha256_after": "d697017a28526196a52b9bbee7e4c4425d661045ccf1996db319a3536e283a4a",
+      "content_changed_for_links": true,
+      "original_removed": false,
+      "original_content_moved": true,
+      "old_path_recreated_as_navigation": true
+    },
+    {
+      "old_path": "mobile/README.md",
+      "new_path": "指导/前端设计/移动端/README.md",
+      "sha256_before": "e1a59c12e201263698bb856193a231a41d9428c2a7388edb7667cd1c07c7b9fa",
+      "sha256_after": "88eb4fa07fc8e4c5d324e845eb1f37f088bea6885d71fabfb87f7d2c28700c27",
+      "content_changed_for_links": true,
+      "original_removed": true
+    },
+    {
+      "old_path": "website/README.md",
+      "new_path": "指导/前端设计/网站模板/README.md",
+      "sha256_before": "f58b5b17f83db63c09a9f2c059ec435ac8a3feb66f9337391ed5f3f62cff4e63",
+      "sha256_after": "f58b5b17f83db63c09a9f2c059ec435ac8a3feb66f9337391ed5f3f62cff4e63",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "website/template-info.md",
+      "new_path": "指导/前端设计/网站模板/template-info.md",
+      "sha256_before": "e86b40922c19326c0d3ddf44ac003359f21f105a38324a471e21ddc678b6eafc",
+      "sha256_after": "e86b40922c19326c0d3ddf44ac003359f21f105a38324a471e21ddc678b6eafc",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "frontend-design/SKILL.md",
+      "new_path": "指导/前端设计/设计规范/SKILL.md",
+      "sha256_before": "1608ea77fbb6fc30d13a97d12cfa8ebf31358d40f0dd97beed24829d6b3f45dd",
+      "sha256_after": "1608ea77fbb6fc30d13a97d12cfa8ebf31358d40f0dd97beed24829d6b3f45dd",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "frontend-design/LICENSE.txt",
+      "new_path": "指导/前端设计/设计规范/LICENSE.txt",
+      "sha256_before": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+      "sha256_after": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "docs/flutter_cards.md",
+      "new_path": "指导/前端设计/flutter_cards.md",
+      "sha256_before": "181429da444a4008024ef5bf2a1d660df5636e834f1ad5adaf11b403de27dc04",
+      "sha256_after": "280b47619381967bf0317f54f5f95a211435783f112e9d93384443093c21a09a",
+      "content_changed_for_links": true,
+      "original_removed": true
+    },
+    {
+      "old_path": "backend/bff/README.md",
+      "new_path": "指导/后端设计/服务说明/bff.md",
+      "sha256_before": "820391f2dac7680aba571a7b885b824fd92c8b56c2c4954f06567d283af8c5e4",
+      "sha256_after": "820391f2dac7680aba571a7b885b824fd92c8b56c2c4954f06567d283af8c5e4",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "backend/gateway/README.md",
+      "new_path": "指导/后端设计/服务说明/gateway.md",
+      "sha256_before": "1a8e8d58f0abb5999a4256a09af5adae78cd2b6225ccae3643f5190812a05a10",
+      "sha256_after": "1a8e8d58f0abb5999a4256a09af5adae78cd2b6225ccae3643f5190812a05a10",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "backend/proxy/README.md",
+      "new_path": "指导/后端设计/服务说明/proxy.md",
+      "sha256_before": "455882e319a93285230beda0ff8a346258be02aea9df87cad8a891931acf7b63",
+      "sha256_after": "455882e319a93285230beda0ff8a346258be02aea9df87cad8a891931acf7b63",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "infra/nginx/certs/README.txt",
+      "new_path": "指导/架构优化/部署/SSL证书说明.txt",
+      "sha256_before": "7fca29728ca251ad4dbd6a9415a8a3bd3cb26b9f582b80c23891427fdb6ee0a6",
+      "sha256_after": "7fca29728ca251ad4dbd6a9415a8a3bd3cb26b9f582b80c23891427fdb6ee0a6",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "docs/architecture.md",
+      "new_path": "指导/架构优化/architecture.md",
+      "sha256_before": "c11ed80655ac868c6db431cbca9007fd83a4dda927985ec1b8edb38e23543ce6",
+      "sha256_after": "9719e082da3997d081e3657e06fce83a0372f43f5f2445a6ada32656fe304057",
+      "content_changed_for_links": true,
+      "original_removed": true
+    },
+    {
+      "old_path": "docs/orchestration_integration.md",
+      "new_path": "指导/架构优化/orchestration_integration.md",
+      "sha256_before": "c885cb26f731c1eff9a6f5a304a80df71240f34e82d5d7b59a2dfdbcdb681743",
+      "sha256_after": "1783c97613a28e38e84f700c19396d4ed2ca36fc6236b9acba23ae1e2a85c759",
+      "content_changed_for_links": true,
+      "original_removed": true
+    },
+    {
+      "old_path": "docs/项目开发现状与路线图.md",
+      "new_path": "指导/架构优化/项目开发现状与路线图.md",
+      "sha256_before": "b9e051d7e23c0a0485fa6219dad644fd7bf068be76edfa1fd3e031e07fdbee4f",
+      "sha256_after": "3429021763ccd7b12edc2119a1538da711446ae6976c86184c277a825d80fa52",
+      "content_changed_for_links": true,
+      "original_removed": true,
+      "sha256_current": "36941bc8cabb7f339f2e6e00cd0803f72b1b4deeb756deddcbea053aa6f58d76",
+      "post_migration_revision": {
+        "date": "2026-11-03",
+        "reason": "按用户后续要求追加“我的”页面demo功能实现方案入口，原七节开发结论保留。",
+        "migration_sha256_preserved": true
+      }
+    },
+    {
+      "old_path": "docs/billing/spec.md",
+      "new_path": "指导/后端设计/计费/spec.md",
+      "sha256_before": "2adfdaf95186e316ff138356206d967e01b99be95c4296e3caea949e3fc9e67c",
+      "sha256_after": "2adfdaf95186e316ff138356206d967e01b99be95c4296e3caea949e3fc9e67c",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "docs/api/asyncapi.yaml",
+      "new_path": "指导/后端设计/API协议/asyncapi.yaml",
+      "sha256_before": "7bb05d78c6e5227380b47235e8d535acc569af7e90c021493516f343c26ea1de",
+      "sha256_after": "7bb05d78c6e5227380b47235e8d535acc569af7e90c021493516f343c26ea1de",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "docs/api/contract.md",
+      "new_path": "指导/后端设计/API协议/contract.md",
+      "sha256_before": "1d4de1a093774a8b3529c81e08011b9d867d6e0b6f748496b33b0ab76aad8cb1",
+      "sha256_after": "1d4de1a093774a8b3529c81e08011b9d867d6e0b6f748496b33b0ab76aad8cb1",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "docs/api/openapi.md",
+      "new_path": "指导/后端设计/API协议/openapi.md",
+      "sha256_before": "f24a1f12e3423d4ae45a8a81a9098f161a67df175f1c7814c344e68510568981",
+      "sha256_after": "f24a1f12e3423d4ae45a8a81a9098f161a67df175f1c7814c344e68510568981",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "docs/prompts/EduAgent_增强机制设计_Master_Prompt.txt",
+      "new_path": "指导/后端设计/提示词/EduAgent_增强机制设计_Master_Prompt.txt",
+      "sha256_before": "8c2552e0c0b42690d928f36d7d67e523ef5e05a81381a93edf46020f927b758c",
+      "sha256_after": "8c2552e0c0b42690d928f36d7d67e523ef5e05a81381a93edf46020f927b758c",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "docs/prompts/EduAgent_编排层设计_Master_Prompt.txt",
+      "new_path": "指导/后端设计/提示词/EduAgent_编排层设计_Master_Prompt.txt",
+      "sha256_before": "cc9f05b0fa7e30406daf01a346d5b6a031d1cacf69775515d9e1fa08ba119df1",
+      "sha256_after": "cc9f05b0fa7e30406daf01a346d5b6a031d1cacf69775515d9e1fa08ba119df1",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "docs/security/security_audit_2026-08-17.md",
+      "new_path": "指导/架构优化/安全审计/security_audit_2026-08-17.md",
+      "sha256_before": "e2b1fc53def15522bdc026dbfd065bbd59bda3121d4df27586ea06fbacef731f",
+      "sha256_after": "e2b1fc53def15522bdc026dbfd065bbd59bda3121d4df27586ea06fbacef731f",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "docs/security/security_audit_2026-08-18.md",
+      "new_path": "指导/架构优化/安全审计/security_audit_2026-08-18.md",
+      "sha256_before": "9720e779a3253548e262b209fb31f240b255fa24892de98f7cbaccee058c02fe",
+      "sha256_after": "9720e779a3253548e262b209fb31f240b255fa24892de98f7cbaccee058c02fe",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "docs/security/security_audit_2026-08-18_guest-auth.md",
+      "new_path": "指导/架构优化/安全审计/security_audit_2026-08-18_guest-auth.md",
+      "sha256_before": "f8bd5a4a3c3b8406a92a4976f444ad031e3a0f0f14fd810a7d39e87b44a9a692",
+      "sha256_after": "f8bd5a4a3c3b8406a92a4976f444ad031e3a0f0f14fd810a7d39e87b44a9a692",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "docs/security/security_owasp.json",
+      "new_path": "指导/架构优化/安全审计/security_owasp.json",
+      "sha256_before": "bd58ae242d46ce6ae012ae34e592247a697e8005f2bb5a2ca2ed023fdcdebeab",
+      "sha256_after": "bd58ae242d46ce6ae012ae34e592247a697e8005f2bb5a2ca2ed023fdcdebeab",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "docs/security/security_report.json",
+      "new_path": "指导/架构优化/安全审计/security_report.json",
+      "sha256_before": "ebd95776a6325eda53640ad3e5c8e93bb81210120e3592e4b98b511ef137001d",
+      "sha256_after": "ebd95776a6325eda53640ad3e5c8e93bb81210120e3592e4b98b511ef137001d",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "docs/security/security_scan_full.json",
+      "new_path": "指导/架构优化/安全审计/security_scan_full.json",
+      "sha256_before": "52e9fbdbfb7c05fe42e773af7c663ae6aa12653588b190ac4fd6ec1b8df67e8d",
+      "sha256_after": "52e9fbdbfb7c05fe42e773af7c663ae6aa12653588b190ac4fd6ec1b8df67e8d",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "/Users/lixichen/Documents/ChatGPT/教育agent/output/frontend-design-2026-11-03/a-paper-study.png",
+      "new_path": "指导/前端设计/历史方案/2026-11-03/a-paper-study.png",
+      "sha256_before": "2e2363357945aab88c8b515777b434b36bb290784b6bd91e1c901500f4397c51",
+      "sha256_after": "2e2363357945aab88c8b515777b434b36bb290784b6bd91e1c901500f4397c51",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "/Users/lixichen/Documents/ChatGPT/教育agent/output/frontend-design-2026-11-03/b-night-study.png",
+      "new_path": "指导/前端设计/历史方案/2026-11-03/b-night-study.png",
+      "sha256_before": "9031f1581bbba7630c0aa43b1267dcce34e4e2f1538d19c4238ce4a131773282",
+      "sha256_after": "9031f1581bbba7630c0aa43b1267dcce34e4e2f1538d19c4238ce4a131773282",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "/Users/lixichen/Documents/ChatGPT/教育agent/output/frontend-design-2026-11-03/prompts.md",
+      "new_path": "指导/前端设计/历史方案/2026-11-03/prompts.md",
+      "sha256_before": "9ed7fd4066ee8e8fe1bd21eb334bae44f7fe68edb66fab653dec00f25a76b5c7",
+      "sha256_after": "9ed7fd4066ee8e8fe1bd21eb334bae44f7fe68edb66fab653dec00f25a76b5c7",
+      "content_changed_for_links": false,
+      "original_removed": true,
+      "sha256_current": "ce420eb4f6b8f19e3900be2defd1d2cbbf20c281278bb0bfaf4ec007759f422e",
+      "post_migration_revision": {
+        "date": "2026-11-03",
+        "reason": "迁移后文档内容更新，保留迁移时哈希。",
+        "migration_sha256_preserved": true
+      }
+    },
+    {
+      "old_path": "/Users/lixichen/Documents/ChatGPT/教育agent/output/frontend-design-2026-11-03/web-concept.png",
+      "new_path": "指导/前端设计/历史方案/2026-11-03/web-concept.png",
+      "sha256_before": "31f2702c6511026484360d5560b2f631e8d7c09cadf45a01f95777ba3585b0c2",
+      "sha256_after": "31f2702c6511026484360d5560b2f631e8d7c09cadf45a01f95777ba3585b0c2",
+      "content_changed_for_links": false,
+      "original_removed": true
+    },
+    {
+      "old_path": "/Users/lixichen/Documents/ChatGPT/教育agent/output/frontend-design-2026-11-03/方案说明.md",
+      "new_path": "指导/前端设计/历史方案/2026-11-03/方案说明.md",
+      "sha256_before": "1e0c4346ae6a7c0689e66651490da0d8a3efe4e4dc26aef1c3da853ecbb11a0f",
+      "sha256_after": "1e0c4346ae6a7c0689e66651490da0d8a3efe4e4dc26aef1c3da853ecbb11a0f",
+      "content_changed_for_links": false,
+      "original_removed": true,
+      "sha256_current": "a45d03a22fe53446960825f87fdb24a0a0d975a5d5ca4b5a3f50f8f7eead172f",
+      "post_migration_revision": {
+        "date": "2026-11-03",
+        "reason": "归档后方案说明追加或调整了内容，迁移时原始哈希保留。",
+        "migration_sha256_preserved": true
+      }
+    }
+  ],
+  "verification": {
+    "files_present": 31,
+    "hashes_match": 31,
+    "byte_identical": 25,
+    "path_updates_only": 6,
+    "root_readme": "原完整正文已迁移，旧位置重新建立导航入口",
+    "current_hash_policy": "有后续修订则核对 sha256_current，否则核对 sha256_after；sha256_after 保留迁移时证据。"
+  }
+}

@@ -1,0 +1,401 @@
+{
+  "date": "2026-11-03",
+  "passed": true,
+  "checks_count": 55,
+  "html_sha256": "3a5204524a5010b8b75166f3e14baedb92b23540cb8f64e2d2e89a683f120c66",
+  "checks": [
+    {
+      "name": "访客可打开完整个人空间",
+      "passed": true
+    },
+    {
+      "name": "320px home无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 320,
+        "scroll": 320,
+        "body": 320,
+        "viewport": 320
+      }
+    },
+    {
+      "name": "320px history无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 320,
+        "scroll": 320,
+        "body": 320,
+        "viewport": 320
+      }
+    },
+    {
+      "name": "320px saved无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 320,
+        "scroll": 320,
+        "body": 320,
+        "viewport": 320
+      }
+    },
+    {
+      "name": "320px settings无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 320,
+        "scroll": 320,
+        "body": 320,
+        "viewport": 320
+      }
+    },
+    {
+      "name": "320px privacy无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 320,
+        "scroll": 320,
+        "body": 320,
+        "viewport": 320
+      }
+    },
+    {
+      "name": "320px help无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 320,
+        "scroll": 320,
+        "body": 320,
+        "viewport": 320
+      }
+    },
+    {
+      "name": "320px auth无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 320,
+        "scroll": 320,
+        "body": 320,
+        "viewport": 320
+      }
+    },
+    {
+      "name": "390px home无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 390,
+        "scroll": 390,
+        "body": 390,
+        "viewport": 390
+      }
+    },
+    {
+      "name": "390px history无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 390,
+        "scroll": 390,
+        "body": 390,
+        "viewport": 390
+      }
+    },
+    {
+      "name": "390px saved无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 390,
+        "scroll": 390,
+        "body": 390,
+        "viewport": 390
+      }
+    },
+    {
+      "name": "390px settings无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 390,
+        "scroll": 390,
+        "body": 390,
+        "viewport": 390
+      }
+    },
+    {
+      "name": "390px privacy无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 390,
+        "scroll": 390,
+        "body": 390,
+        "viewport": 390
+      }
+    },
+    {
+      "name": "390px help无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 390,
+        "scroll": 390,
+        "body": 390,
+        "viewport": 390
+      }
+    },
+    {
+      "name": "390px auth无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 390,
+        "scroll": 390,
+        "body": 390,
+        "viewport": 390
+      }
+    },
+    {
+      "name": "768px home无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 496,
+        "scroll": 496,
+        "body": 768,
+        "viewport": 768
+      }
+    },
+    {
+      "name": "768px history无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 496,
+        "scroll": 496,
+        "body": 768,
+        "viewport": 768
+      }
+    },
+    {
+      "name": "768px saved无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 496,
+        "scroll": 496,
+        "body": 768,
+        "viewport": 768
+      }
+    },
+    {
+      "name": "768px settings无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 496,
+        "scroll": 496,
+        "body": 768,
+        "viewport": 768
+      }
+    },
+    {
+      "name": "768px privacy无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 496,
+        "scroll": 496,
+        "body": 768,
+        "viewport": 768
+      }
+    },
+    {
+      "name": "768px help无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 496,
+        "scroll": 496,
+        "body": 768,
+        "viewport": 768
+      }
+    },
+    {
+      "name": "768px auth无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 496,
+        "scroll": 496,
+        "body": 768,
+        "viewport": 768
+      }
+    },
+    {
+      "name": "1440px home无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 1168,
+        "scroll": 1168,
+        "body": 1440,
+        "viewport": 1440
+      }
+    },
+    {
+      "name": "1440px history无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 1168,
+        "scroll": 1168,
+        "body": 1440,
+        "viewport": 1440
+      }
+    },
+    {
+      "name": "1440px saved无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 1168,
+        "scroll": 1168,
+        "body": 1440,
+        "viewport": 1440
+      }
+    },
+    {
+      "name": "1440px settings无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 1168,
+        "scroll": 1168,
+        "body": 1440,
+        "viewport": 1440
+      }
+    },
+    {
+      "name": "1440px privacy无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 1168,
+        "scroll": 1168,
+        "body": 1440,
+        "viewport": 1440
+      }
+    },
+    {
+      "name": "1440px help无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 1168,
+        "scroll": 1168,
+        "body": 1440,
+        "viewport": 1440
+      }
+    },
+    {
+      "name": "1440px auth无横向溢出",
+      "passed": true,
+      "detail": {
+        "client": 1168,
+        "scroll": 1168,
+        "body": 1440,
+        "viewport": 1440
+      }
+    },
+    {
+      "name": "历史列表展示三条样例",
+      "passed": true
+    },
+    {
+      "name": "历史搜索匹配学科",
+      "passed": true
+    },
+    {
+      "name": "搜索空结果按文本处理",
+      "passed": true
+    },
+    {
+      "name": "历史收藏计数实时同步",
+      "passed": true
+    },
+    {
+      "name": "全部取消收藏显示空状态",
+      "passed": true
+    },
+    {
+      "name": "历史可恢复样例并返回对话",
+      "passed": true
+    },
+    {
+      "name": "登录页明确演示范围",
+      "passed": true
+    },
+    {
+      "name": "模拟登录替换DEMO为昵称头像名称",
+      "passed": true
+    },
+    {
+      "name": "侧栏身份同步",
+      "passed": true
+    },
+    {
+      "name": "退出回到访客外观",
+      "passed": true
+    },
+    {
+      "name": "昵称安全按纯文本呈现",
+      "passed": true
+    },
+    {
+      "name": "设置深色主题联动",
+      "passed": true
+    },
+    {
+      "name": "跟随系统可变为浅色",
+      "passed": true
+    },
+    {
+      "name": "跟随系统可动态变为深色",
+      "passed": true
+    },
+    {
+      "name": "学习偏好保存后反馈明确",
+      "passed": true
+    },
+    {
+      "name": "减少动画开关联动样式",
+      "passed": true
+    },
+    {
+      "name": "导出JSON明确标记demo且包含本次偏好",
+      "passed": true
+    },
+    {
+      "name": "重置支持取消",
+      "passed": true
+    },
+    {
+      "name": "确认重置恢复访客收藏主题偏好",
+      "passed": true
+    },
+    {
+      "name": "FAQ可展开",
+      "passed": true
+    },
+    {
+      "name": "反馈只有本地提交回执",
+      "passed": true
+    },
+    {
+      "name": "刷新后模拟身份和非持久偏好恢复默认",
+      "passed": true
+    },
+    {
+      "name": "跟随系统主题选择持久化",
+      "passed": true
+    },
+    {
+      "name": "没有重复元素ID",
+      "passed": true
+    },
+    {
+      "name": "无脚本及控制台错误",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "无外部HTTP请求",
+      "passed": true,
+      "detail": []
+    }
+  ],
+  "errors": [],
+  "external_requests": [],
+  "scope": "仅离线个人空间demo，不证明真实认证、同步或业务联调。"
+}

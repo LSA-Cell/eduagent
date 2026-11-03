@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     celery_result_backend: str = "redis://redis:6379/2"
 
     minio_endpoint: str = "minio:9000"
+    # 客户端可达的 S3 地址；签名中的 Host 必须与客户端请求的 Host 一致。
+    minio_public_endpoint: str = "localhost:9000"
+    minio_public_use_ssl: bool = False
     minio_access_key: str = "eduagent_minio"
     minio_secret_key: str = "change_me_minio"
     minio_bucket_uploads: str = "eduagent-uploads"
@@ -82,7 +85,7 @@ class Settings(BaseSettings):
     billing_url: str = "http://billing:8006"
     internal_service_token: str = "change_me_internal_service_token"
 
-    # ---------- Billing（会员订阅与支付，docs/billing/spec.md） ----------
+    # ---------- Billing（会员订阅与支付，指导/后端设计/计费/spec.md） ----------
     # webhook 验签密钥（JSON 字符串）：channel -> HMAC-SHA256 secret；
     # 未配置 secret 的渠道 webhook 一律 503 fail-closed（与第三方登录同策略）
     billing_webhook_secrets: dict[str, str] = {}

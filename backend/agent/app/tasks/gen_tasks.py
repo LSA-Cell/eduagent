@@ -7,6 +7,8 @@ run_*_generation 内，失败也会落库为 failed 供轮询）。
 
 from __future__ import annotations
 
+import asyncio
+import uuid
 from typing import Any, Optional
 
 from eduagent_shared import db
@@ -20,7 +22,7 @@ from eduagent_shared.models import (
     StudyPlan,
 )
 
-from app.services import analytics_service, content_gen, plan_service
+from app.services import analytics_service, content_gen, plan_service, storage_service
 from app.services.docgen_client import get_docgen_client
 from app.services.llm_client import get_llm_client
 from app.tasks.celery_app import celery_app, run_async
@@ -85,10 +87,7 @@ async def run_generate_exam_paper(
 async def run_generate_analysis(
     record_id: str, *, session_factory: Any = None, llm: Any = None, docgen: Any = None
 ) -> dict[str, Any]:
-    """学情分析：聚合错题统计 → LLM 报告 JSON → docgen 渲染 PDF。
-
-    data_source 约定：{"student_ids": [...], "days": 30}（均可选，缺省分析创建者本人）。
-    """
+    """学情分析：按选定错题或私有成绩文件聚合 → LLM 报告 → PDF。"""
     factory = session_factory or db.get_session_factory()
     llm, docgen = _clients(llm, docgen)
     async with factory() as session:
@@ -96,9 +95,39 @@ async def run_generate_analysis(
         if record is None:
             return {"id": record_id, "status": "not_found"}
         data_source = dict((record.metrics or {}).get("data_source") or {})
-        student_ids = [str(s) for s in data_source.get("student_ids") or [record.user_id]]
-        days: Optional[int] = data_source.get("days")
-        stats = await analytics_service.aggregate_mistake_stats(session, student_ids, days)
+        try:
+            if data_source.get("file_url") or record.analysis_type == "score":
+                settings = get_settings()
+                key, extension = analytics_service.report_object_key(
+                    str(data_source["file_url"]), str(record.user_id),
+                    settings.minio_public_endpoint, settings.minio_public_use_ssl,
+                    settings.minio_bucket_uploads,
+                )
+                info = await asyncio.to_thread(storage_service.stat_object, key, settings=settings)
+                if not 0 < info.size <= analytics_service.MAX_REPORT_BYTES:
+                    raise ValueError("report file too large")
+                content = await asyncio.to_thread(storage_service.download_bytes, key, settings=settings)
+                stats = analytics_service.aggregate_score_file(content, extension)
+            elif data_source.get("mistake_ids") is not None:
+                raw_ids = data_source["mistake_ids"]
+                if not isinstance(raw_ids, list) or not 0 < len(raw_ids) <= 500:
+                    raise ValueError("invalid selected mistake IDs")
+                selected_ids = list(dict.fromkeys(uuid.UUID(str(value)) for value in raw_ids))
+                stats = await analytics_service.aggregate_mistake_stats(
+                    session, [str(record.user_id)], mistake_ids=selected_ids,
+                )
+            else:
+                student_ids = [str(s) for s in data_source.get("student_ids") or [record.user_id]]
+                if student_ids != [str(record.user_id)]:
+                    raise ValueError("student scope is not authorized")
+                days: Optional[int] = data_source.get("days")
+                stats = await analytics_service.aggregate_mistake_stats(session, student_ids, days)
+        except Exception as exc:  # noqa: BLE001 - 异步任务必须落失败状态，不暴露存储错误
+            log.warning("analysis_source_failed", record_id=record_id, error_type=type(exc).__name__)
+            record.metrics = {**(record.metrics or {}), "status": "failed",
+                              "_error": "成绩或错题数据无法读取，请检查文件后重试"}
+            await session.commit()
+            return {"id": record_id, "status": "failed"}
         result = await content_gen.run_analysis_generation(session, llm, docgen, record, stats)
         await session.commit()
         log.info("analysis_generated", record_id=record_id, status=result["status"])

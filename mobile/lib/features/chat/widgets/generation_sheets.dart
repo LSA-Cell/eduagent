@@ -232,10 +232,20 @@ class _AnalyticsSheetState extends ConsumerState<AnalyticsSheet> {
   Future<void> _pickFile() async {
     final files = await FilePicker.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['csv', 'xlsx', 'xls'],
+      allowedExtensions: ['csv', 'xlsx'],
     );
     if (files.isEmpty) return;
     final file = files.single;
+    final fileSize = await file.length();
+    if (!mounted) return;
+    if (fileSize > 5 * 1024 * 1024) {
+      setState(() {
+        _filePath = null;
+        _fileName = null;
+        _error = '成绩文件不能超过 5 MiB';
+      });
+      return;
+    }
     setState(() {
       _filePath = file.path;
       _fileName = file.name;

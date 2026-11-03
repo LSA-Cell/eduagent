@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 from typing import Any, Optional
 
@@ -98,13 +99,19 @@ async def create_upload_url(
     db.add(document)
     await db.flush()
     await db.commit()
-    upload_url = storage_service.create_presigned_put(
-        object_key, settings=settings, expires=UPLOAD_URL_EXPIRES
+    upload_url = await asyncio.to_thread(
+        storage_service.create_presigned_put,
+        object_key, settings=settings, expires=UPLOAD_URL_EXPIRES,
+    )
+    file_url = await asyncio.to_thread(
+        storage_service.presigned_get,
+        object_key, settings=settings, expires=UPLOAD_URL_EXPIRES,
     )
     log.info("kb_upload_url_created", user_id=user_id, document_id=str(document.id))
     return {
         "document_id": str(document.id),
         "upload_url": upload_url,
+        "file_url": file_url,
         "object_key": object_key,
         "expires_in": UPLOAD_URL_EXPIRES,
     }
@@ -122,7 +129,7 @@ async def confirm_upload(
         raise HTTPException(status_code=409, detail=f"当前状态不可确认: {document.status}")
     document.status = "processing"
     await db.commit()
-    task = kb_tasks.parse_document.delay(str(document.id))
+    task = kb_tasks.parse_document.delay(str(document.id)) # type: ignore
     log.info("kb_parse_dispatched", document_id=document_id, task_id=getattr(task, "id", None))
     return {
         "document_id": str(document.id),

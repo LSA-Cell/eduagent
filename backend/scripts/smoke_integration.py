@@ -2,19 +2,21 @@
 """EduAgent 后端联调冒烟测试（真实 docker compose 环境）。
 
 前置条件：
-  docker compose up -d   # 全部服务健康（无 GPU，vLLM 不启动）
+  docker compose up -d bff agent-worker  # dev/test，相关服务健康；不启动 beat/GPU
+  导出与服务一致的 INTERNAL_SERVICE_TOKEN（脚本不会读取或打印 .env 密钥）
 
 覆盖链路：
-  1. 六服务 /health
-  2. BFF 鉴权链：register -> login -> refresh -> users/me（PostgreSQL 落库）
+  1. 七服务 /health
+  2. BFF 鉴权链：sms-code(dev_code) -> register -> login -> refresh -> users/me
   3. BFF 会话链：创建/列出 chat sessions、消息列表
   4. 内部服务直连：gateway /v1/models、multimodal /ocr（mock provider）、
      docgen 渲染任务 -> MinIO 预签名 URL
   5. 鉴权负例：无/错 X-Internal-Token -> 401/403
-  6. 推理降级链（无 GPU 预期失败但需可解释）：chat/completions -> 502/404
+  6. 本地推理不可用链（强制 internal、不调用付费外部模型）：chat/completions -> 502
 
 用法：python3 backend/scripts/smoke_integration.py [--base http://localhost]
-仅依赖标准库。
+仅依赖标准库；会创建专用测试账号/会话/文档，仅用于隔离的 dev/test 数据库。
+MinIO 检查确认任务成功并返回 ≤1h 的签名 URL，不替代真实文件下载验收。
 """
 
 from __future__ import annotations
@@ -22,13 +24,14 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import os
+import socket
 import sys
 import time
 import urllib.error
 import urllib.request
 import uuid
-
-INTERNAL_TOKEN = "change_me_internal_service_token"  # 与 .env 一致
+from urllib.parse import parse_qs, urlsplit
 
 # 1x1 透明 PNG
 TINY_PNG = base64.b64decode(
@@ -64,6 +67,8 @@ def req(method: str, url: str, body: dict | None = None,
             return e.code, json.loads(raw)
         except json.JSONDecodeError:
             return e.code, raw
+    except (urllib.error.URLError, TimeoutError, socket.timeout):
+        return 0, "连接失败或请求超时"
 
 
 def req_multipart(url: str, field: str, filename: str, content: bytes,
@@ -91,17 +96,47 @@ def req_multipart(url: str, field: str, filename: str, content: bytes,
             return e.code, json.loads(raw)
         except json.JSONDecodeError:
             return e.code, raw
+    except (urllib.error.URLError, TimeoutError, socket.timeout):
+        return 0, "连接失败或请求超时"
 
 
-def main() -> int:
+def valid_presigned_url(value: object) -> bool:
+    """验证任务结果的签名地址及过期时间；签名本身不输出到日志。"""
+    if not isinstance(value, str):
+        return False
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return False
+    query = parse_qs(parsed.query)
+    try:
+        expires = int(query.get("X-Amz-Expires", ["0"])[0])
+    except ValueError:
+        return False
+    return (
+        parsed.scheme in ("http", "https")
+        and bool(parsed.netloc and parsed.path)
+        and bool(query.get("X-Amz-Signature", [""])[0])
+        and 0 < expires <= 3600
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default="http://localhost")
-    args = ap.parse_args()
+    ap.add_argument("--docker-network", action="store_true",
+                    help="在本项目容器内按既有 Compose 服务名访问")
+    args = ap.parse_args(argv)
+    internal_token = os.environ.get("INTERNAL_SERVICE_TOKEN", "")
+    if not internal_token:
+        ap.error("请先设置 INTERNAL_SERVICE_TOKEN（须与 dev/test 服务配置一致）")
+    results.clear()
     base = args.base.rstrip("/")
     ports = {"bff": 8000, "gateway": 8001, "agent": 8002,
-             "multimodal": 8003, "proxy": 8004, "docgen": 8005}
-    url = {name: f"{base}:{port}" for name, port in ports.items()}
-    tok = {"X-Internal-Token": INTERNAL_TOKEN}
+             "multimodal": 8003, "proxy": 8004, "docgen": 8005, "billing": 8006}
+    url = {name: f"http://{name}:{port}" if args.docker_network else f"{base}:{port}"
+           for name, port in ports.items()}
+    tok = {"X-Internal-Token": internal_token}
 
     # ---------- 1. 健康检查 ----------
     for name in ports:
@@ -111,14 +146,22 @@ def main() -> int:
     # ---------- 2. BFF 鉴权链（真实 PostgreSQL） ----------
     phone = "139" + "".join(str(uuid.uuid4().int % 10) for _ in range(8))
     password = "smoke-test-123"
+    code, body = req("POST", f"{url['bff']}/api/v1/auth/sms-code",
+                     {"phone": phone, "scene": "register"})
+    if code != 200 or not isinstance(body, dict) or not body.get("dev_code"):
+        record("bff/sms_code", FAIL,
+               f"HTTP {code}; 需要 dev/test 的 dev_code，禁止在生产环境运行此脚本")
+        return summarize()
+    sms_code = body["dev_code"]
+    record("bff/sms_code", PASS)
     code, body = req("POST", f"{url['bff']}/api/v1/auth/register",
-                     {"phone": phone, "password": password})
+                     {"phone": phone, "password": password, "sms_code": sms_code})
     if code == 201 and isinstance(body, dict) and "tokens" in body:
-        record("bff/register", PASS, f"phone={phone}")
+        record("bff/register", PASS)
         access = body["tokens"]["access_token"]
         refresh = body["tokens"]["refresh_token"]
     else:
-        record("bff/register", FAIL, f"HTTP {code}: {str(body)[:200]}")
+        record("bff/register", FAIL, f"HTTP {code}")
         return summarize()  # 后续链路都依赖令牌，直接终止
 
     code, body = req("POST", f"{url['bff']}/api/v1/auth/login",
@@ -131,7 +174,7 @@ def main() -> int:
         record("bff/refresh", PASS)
         access = body.get("access_token", access)
     else:
-        record("bff/refresh", FAIL, f"HTTP {code}: {str(body)[:200]}")
+        record("bff/refresh", FAIL, f"HTTP {code}")
 
     auth = {"Authorization": f"Bearer {access}"}
     code, body = req("GET", f"{url['bff']}/api/v1/users/me", headers=auth)
@@ -146,7 +189,7 @@ def main() -> int:
         session_id = body.get("id") or body.get("session_id")
         record("bff/create_session", PASS, f"id={session_id}")
     else:
-        record("bff/create_session", FAIL, f"HTTP {code}: {str(body)[:200]}")
+        record("bff/create_session", FAIL, f"HTTP {code}")
 
     code, body = req("GET", f"{url['bff']}/api/v1/chat/sessions", headers=auth)
     record("bff/list_sessions", PASS if code == 200 else FAIL, f"HTTP {code}")
@@ -157,15 +200,14 @@ def main() -> int:
         record("bff/session_messages", PASS if code == 200 else FAIL, f"HTTP {code}")
 
     # ---------- 4. 内部服务直连 ----------
-    code, body = req("GET", f"{url['gateway']}/v1/models")
+    code, body = req("GET", f"{url['gateway']}/v1/models", headers=tok)
     n = len(body.get("data", [])) if isinstance(body, dict) else 0
     record("gateway/models", PASS if code == 200 else FAIL,
            f"HTTP {code}, {n} models")
 
     code, body = req_multipart(f"{url['multimodal']}/ocr", "file", "smoke.png",
                                TINY_PNG, headers=tok)
-    record("multimodal/ocr(mock)", PASS if code == 200 else FAIL,
-           f"HTTP {code}: {str(body)[:120]}")
+    record("multimodal/ocr", PASS if code == 200 else FAIL, f"HTTP {code}")
 
     code, body = req("POST", f"{url['docgen']}/render/lesson_plan",
                      {"title": "二次函数复习课", "course_name": "数学",
@@ -196,37 +238,42 @@ def main() -> int:
             if c == 200 and isinstance(b, dict) and b.get("status") in ("completed", "failed"):
                 final = b
                 break
-        if final and final.get("status") == "completed":
-            record("docgen/render+minio", PASS, str(final.get("file_url") or final)[:150])
+        rendered = (final or {}).get("result") or {}
+        if final and final.get("status") == "completed" and isinstance(rendered, dict) and valid_presigned_url(rendered.get("file_url")):
+            record("docgen/render+minio", PASS, "任务完成且返回有效期不超过 1h 的签名 URL")
         else:
-            record("docgen/render+minio", FAIL, str(final or "timeout")[:200])
+            record("docgen/render+minio", FAIL, "任务超时、失败或缺少有效签名结果")
     else:
-        record("docgen/submit", FAIL, f"HTTP {code}: {str(body)[:200]}")
+        record("docgen/submit", FAIL, f"HTTP {code}")
 
     # ---------- 5. 鉴权负例 ----------
-    for name, path, expect in [("gateway", "/v1/chat/completions", (403,)),
-                               ("agent", "/agent/chat", (401,)),
-                               ("proxy", "/proxy/chat", (401, 403)),
-                               ("multimodal", "/ocr", (401,)),
-                               ("docgen", "/render/lesson_plan", (401,))]:
-        code, _ = req("POST", f"{url[name]}{path}", {})
-        record(f"auth-negative/{name}", PASS if code in expect else FAIL,
-               f"HTTP {code} (expect {'/'.join(map(str, expect))})")
+    for method, name, path, expect in [
+        ("POST", "gateway", "/v1/chat/completions", (403,)),
+        ("POST", "agent", "/agent/chat", (401,)),
+        ("POST", "proxy", "/proxy/chat", (401, 403)),
+        ("POST", "multimodal", "/ocr", (401,)),
+        ("POST", "docgen", "/render/lesson_plan", (401,)),
+        ("GET", "billing", "/billing/plans", (401, 403)),
+    ]:
+        for label, headers in (("missing", None), ("wrong", {"X-Internal-Token": uuid.uuid4().hex})):
+            code, _ = req(method, f"{url[name]}{path}", {} if method == "POST" else None, headers=headers)
+            record(f"auth-negative/{name}/{label}", PASS if code in expect else FAIL,
+                   f"HTTP {code} (expect {'/'.join(map(str, expect))})")
 
-    # ---------- 6. 推理降级链（无 GPU：预期 502/404，验证错误可解释） ----------
+    # ---------- 6. 仅内部模型错误链，不触发平台或用户付费 Key ----------
     code, body = req("POST", f"{url['bff']}/api/v1/chat/completions",
                      {"model": "edu-general-14b",
                       "messages": [{"role": "user", "content": "hi"}],
-                      "stream": False},
+                      "stream": False, "inference_source": "internal",
+                      "auto_failover": False},
                      headers=auth, timeout=30)
-    detail = str(body)[:150]
-    if code in (502, 404):
-        record("bff/chat_failover(no-key)", PASS,
-               f"HTTP {code} 符合预期(无 vLLM 且未绑 Key): {detail}")
-    elif code == 200:
-        record("bff/chat_failover(no-key)", PASS, f"意外成功? {detail}")
+    if code == 502 and isinstance(body, dict) and body.get("error"):
+        record("bff/chat_unavailable(internal-only)", PASS,
+               "HTTP 502 且返回结构化错误（未启用 vLLM；未请求外部模型）")
+    elif code == 200 and isinstance(body, dict) and body.get("choices"):
+        record("bff/chat_unavailable(internal-only)", PASS, "内部推理通道已可用，返回有效响应")
     else:
-        record("bff/chat_failover(no-key)", FAIL, f"HTTP {code}: {detail}")
+        record("bff/chat_unavailable(internal-only)", FAIL, f"HTTP {code}")
 
     return summarize()
 

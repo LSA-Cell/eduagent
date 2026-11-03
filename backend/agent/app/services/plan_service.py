@@ -12,10 +12,14 @@ from datetime import date, timedelta
 from typing import Any, Optional
 
 from eduagent_shared.models import StudyPlan
+from eduagent_shared.logging import get_logger
 
 from app import prompts
 from app.services.content_gen import PlanDay
 from app.services.llm_client import LLMClient
+
+log = get_logger("agent.plan_service")
+_FAILURE_MESSAGE = "学习计划生成失败，请稍后重试"
 
 
 async def create_plan(session: Any, user_id: str, req: Any) -> Any:
@@ -61,7 +65,8 @@ async def run_plan_generation(session: Any, llm: LLMClient, plan: Any) -> dict[s
         plan.plan_content = content
         plan.status = "active"
     except Exception as exc:  # noqa: BLE001 - 失败落库供轮询
-        content["_error"] = str(exc)[:500]
+        content["_error"] = _FAILURE_MESSAGE
+        log.warning("plan_generation_failed", error_type=type(exc).__name__)
         plan.plan_content = content
         plan.status = "failed"
     await session.flush()
@@ -106,7 +111,7 @@ def plan_to_dict(plan: Any) -> dict[str, Any]:
         "completed_days": content.get("completed_days") or [],
         "progress": plan.progress,
         "status": plan.status,
-        "error": content.get("_error"),
+        "error": _FAILURE_MESSAGE if content.get("_error") else None,
         "start_date": plan.start_date.isoformat() if plan.start_date else None,
         "end_date": plan.end_date.isoformat() if plan.end_date else None,
         "created_at": plan.created_at.isoformat() if getattr(plan, "created_at", None) else None,

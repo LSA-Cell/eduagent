@@ -227,8 +227,7 @@ class ProfilePage extends ConsumerWidget {
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Icon(Icons.key,
-                                      size: 18,
-                                      color: scheme.onSurfaceVariant),
+                                      size: 18, color: scheme.onSurfaceVariant),
                                 ),
                                 title: Text(k.provider),
                                 subtitle: Text(k.maskedKey), // 只显示掩码
@@ -260,8 +259,7 @@ class ProfilePage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('游客模式',
-                        style: Theme.of(context).textTheme.titleSmall),
+                    Text('游客模式', style: Theme.of(context).textTheme.titleSmall),
                     const SizedBox(height: 6),
                     Text('绑定手机号可保留当前学习数据，并可在其他设备登录',
                         style: Theme.of(context).textTheme.bodySmall),
@@ -323,8 +321,7 @@ class ProfilePage extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: user?.teacherVerified == true
                         ? AppPalette.sage.withValues(alpha: 0.12)
-                        : scheme.surfaceContainerHighest
-                            .withValues(alpha: 0.7),
+                        : scheme.surfaceContainerHighest.withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(AppTokens.radiusMd),
                   ),
                   child: Icon(
@@ -337,9 +334,8 @@ class ProfilePage extends ConsumerWidget {
                         : scheme.onSurfaceVariant,
                   ),
                 ),
-                title: Text(user?.teacherVerified == true
-                    ? '已认证'
-                    : '上传教师资格证/在职证明'),
+                title: Text(
+                    user?.teacherVerified == true ? '已认证' : '上传教师资格证/在职证明'),
                 subtitle: user?.teacherVerified == true
                     ? null
                     : const Text('PDF 或图片'),
@@ -391,7 +387,9 @@ class ProfilePage extends ConsumerWidget {
     if (path == null) return;
     try {
       // 先经预签名地址上传文件，再提交认证（202 受理，待审核）
-      final url = await ref.read(toolApiProvider).uploadFile(path);
+      final url = await ref
+          .read(toolApiProvider)
+          .uploadFile(path, certificationFile: true);
       await ref.read(teacherApiProvider).uploadCertification(url);
       if (context.mounted) {
         ScaffoldMessenger.of(context)
@@ -475,8 +473,7 @@ class ProfilePage extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('绑定手机号',
-                  style: Theme.of(sheetContext).textTheme.titleLarge),
+              Text('绑定手机号', style: Theme.of(sheetContext).textTheme.titleLarge),
               const SizedBox(height: 16),
               TextField(
                 controller: phoneCtrl,
@@ -494,9 +491,8 @@ class ProfilePage extends ConsumerWidget {
                         ? null
                         : () async {
                             try {
-                              await ref
-                                  .read(authApiProvider)
-                                  .sendSmsCode(phoneCtrl.text.trim(), 'register');
+                              await ref.read(authApiProvider).sendSmsCode(
+                                  phoneCtrl.text.trim(), 'register');
                               setSheetState(() {
                                 error = null;
                                 countdown = 60;
@@ -520,8 +516,8 @@ class ProfilePage extends ConsumerWidget {
               TextField(
                 controller: pwdCtrl,
                 obscureText: true,
-                decoration:
-                    const InputDecoration(labelText: '设置密码', helperText: '至少 8 位'),
+                decoration: const InputDecoration(
+                    labelText: '设置密码', helperText: '至少 8 位'),
               ),
               if (error != null) ...[
                 const SizedBox(height: 10),
@@ -533,10 +529,12 @@ class ProfilePage extends ConsumerWidget {
               const SizedBox(height: 20),
               FilledButton(
                 onPressed: () async {
-                  final err = await ref.read(authProvider.notifier).upgradeGuest(
-                      phone: phoneCtrl.text.trim(),
-                      password: pwdCtrl.text,
-                      smsCode: codeCtrl.text.trim());
+                  final err = await ref
+                      .read(authProvider.notifier)
+                      .upgradeGuest(
+                          phone: phoneCtrl.text.trim(),
+                          password: pwdCtrl.text,
+                          smsCode: codeCtrl.text.trim());
                   if (err == null) {
                     if (sheetContext.mounted) Navigator.of(sheetContext).pop();
                     if (context.mounted) {
@@ -603,8 +601,8 @@ class ProfilePage extends ConsumerWidget {
                       .changePassword(oldCtrl.text, newCtrl.text);
                   if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('密码已修改')));
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(const SnackBar(content: Text('密码已修改')));
                   }
                 } on ApiException catch (e) {
                   setDialogState(() => error = e.message);

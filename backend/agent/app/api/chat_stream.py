@@ -102,7 +102,7 @@ async def chat_stream(
     run_id: Optional[str] = Query(default=None),
     orch_deps: Any = Depends(app_deps.get_orchestration_deps),
 ) -> StreamingResponse:
-    """聊天主入口（text/event-stream，事件契约见 docs/api/asyncapi.yaml）。"""
+    """聊天主入口（text/event-stream，事件契约见 指导/后端设计/API协议/asyncapi.yaml）。"""
     user_id = x_user_id or req.user_id
     if not user_id:
         raise HTTPException(status_code=400, detail="missing user id")

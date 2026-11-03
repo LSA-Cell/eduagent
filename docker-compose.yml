@@ -61,7 +61,10 @@ services:
       - net_data
 
   minio:
-    image: minio/minio:latest
+    image: eduagent/minio:RELEASE.2025-10-15T17-29-55Z
+    build:
+      context: ./infra/minio
+      target: server
     container_name: eduagent-minio
     restart: unless-stopped
     env_file:
@@ -71,7 +74,7 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-change_me_minio}
     command: ["server", "/data", "--console-address", ":9001"]
     ports:
-      - "127.0.0.1:9000:9000"          # S3 API
+      - "${MINIO_PORT_BIND_IP:-127.0.0.1}:9000:9000" # S3 API；真机调试设宿主机局域网 IP
       - "127.0.0.1:9001:9001"          # 控制台
     volumes:
       - minio_data:/data
@@ -86,7 +89,10 @@ services:
 
   # 初始化私有桶：eduagent-uploads / eduagent-generated / eduagent-templates
   createbuckets:
-    image: minio/mc:latest
+    image: eduagent/mc:RELEASE.2025-08-13T08-35-41Z
+    build:
+      context: ./infra/minio
+      target: client
     container_name: eduagent-createbuckets
     env_file:
       - .env                       # MINIO_ACCESS_KEY / MINIO_SECRET_KEY / MINIO_BUCKET_*

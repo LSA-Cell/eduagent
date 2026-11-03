@@ -1,0 +1,115 @@
+{
+  "date": "2026-11-03",
+  "scope": "仅修正因文档迁移而失效的12处注释/文档字符串引用，不改变可执行逻辑或SQL语句。",
+  "count": 12,
+  "records": [
+    {
+      "file": "infra/postgres/init.sql",
+      "old_reference": "docs/billing/spec.md",
+      "new_reference": "指导/后端设计/计费/spec.md",
+      "sha256_before": "6349ade8162d753663d90f0a20af281c30bbed1fab949017af7e103078a412d9",
+      "sha256_after": "ab46308fe8861f148b2280ab7f8e0778730b554d9a174a28b0e40d2a4b29fec4",
+      "executable_logic_unchanged": true,
+      "validation": "Content excluding full-line documentation comments"
+    },
+    {
+      "file": "mobile/lib/models/billing.dart",
+      "old_reference": "docs/billing/spec.md",
+      "new_reference": "指导/后端设计/计费/spec.md",
+      "sha256_before": "20ff920707c1d8a724583614889c4d6050e9cd5f433a091984272b8a7bddc4f5",
+      "sha256_after": "95ec86dcd23b59f86ad466f037865789ff6b2de1b52cefabae265915db1483b0",
+      "executable_logic_unchanged": true,
+      "validation": "Content excluding full-line documentation comments"
+    },
+    {
+      "file": "mobile/lib/features/billing/billing_provider.dart",
+      "old_reference": "docs/billing/spec.md",
+      "new_reference": "指导/后端设计/计费/spec.md",
+      "sha256_before": "37b9f3f2e9a73f0b2fe08b6440bdcbb47b8ce07b5204d70bc527b963719af4a4",
+      "sha256_after": "19e99435cd519301a99eadc3b6c3ea667e0feda237cfee6af160e54768a2e7d4",
+      "executable_logic_unchanged": true,
+      "validation": "Content excluding full-line documentation comments"
+    },
+    {
+      "file": "backend/billing/app/main.py",
+      "old_reference": "docs/billing/spec.md",
+      "new_reference": "指导/后端设计/计费/spec.md",
+      "sha256_before": "ffd40a440ad8469925651effc198372bf3265cd73e085170ed89d9a66bcbb1cf",
+      "sha256_after": "41ef003f86fe79d5a835a4d2aa12a8ee3a88992174b0b5b7d1542bd0d2a1cadf",
+      "executable_logic_unchanged": true,
+      "validation": "Python AST excluding docstrings"
+    },
+    {
+      "file": "backend/billing/app/schemas.py",
+      "old_reference": "docs/billing/spec.md",
+      "new_reference": "指导/后端设计/计费/spec.md",
+      "sha256_before": "60b13ec975ec728aa5cde914992e64635593b231dd14dab06cc99d402e46ece6",
+      "sha256_after": "6e490e242ef63fa883fe9a35bca2da5f1e913f263b4cdf586549414b6deac488",
+      "executable_logic_unchanged": true,
+      "validation": "Python AST excluding docstrings"
+    },
+    {
+      "file": "backend/shared/eduagent_shared/models.py",
+      "old_reference": "docs/billing/spec.md",
+      "new_reference": "指导/后端设计/计费/spec.md",
+      "sha256_before": "2d05cbad771490cf87d77526437e6796352ba1e058b700d115053db238a24a0f",
+      "sha256_after": "d6189fe2660dbcc6fef81f942d656c400f020df1d8339ca613b44fab4fbd710c",
+      "executable_logic_unchanged": true,
+      "validation": "Python AST excluding docstrings"
+    },
+    {
+      "file": "backend/shared/eduagent_shared/config.py",
+      "old_reference": "docs/billing/spec.md",
+      "new_reference": "指导/后端设计/计费/spec.md",
+      "sha256_before": "0fe1e18bf013be5af481302da45d5ebaa8777e4ca83a4d6077ab5715ce2a58d9",
+      "sha256_after": "36fc5e1a507265bd0142420267be12a6f2706717afd6c0b1138a4723a2f44a8d",
+      "executable_logic_unchanged": true,
+      "validation": "Python AST excluding docstrings"
+    },
+    {
+      "file": "backend/proxy/app/services/quota.py",
+      "old_reference": "docs/billing/spec.md",
+      "new_reference": "指导/后端设计/计费/spec.md",
+      "sha256_before": "0d8c2a1ca9fbc841e7d01a5a658f864b68e77ba412eac14e0f30d4c34d4a19d1",
+      "sha256_after": "a8ad10c99db057d040a009bf9d3089863afabacd0d1894b116a713553c8d3c7c",
+      "executable_logic_unchanged": true,
+      "validation": "Python AST excluding docstrings"
+    },
+    {
+      "file": "mobile/lib/core/network/api/teacher_api.dart",
+      "old_reference": "docs/api/contract.md",
+      "new_reference": "指导/后端设计/API协议/contract.md",
+      "sha256_before": "feb824c48e1d683b08023483920239d4a1ccdb0b2fc1ef7c29c460e8914c066b",
+      "sha256_after": "a558b7882872796967a1bed52627fb14eb80a3a6de0c70d2eec519362ff9cccf",
+      "executable_logic_unchanged": true,
+      "validation": "Content excluding full-line documentation comments"
+    },
+    {
+      "file": "mobile/lib/core/network/api/user_api.dart",
+      "old_reference": "docs/api/contract.md",
+      "new_reference": "指导/后端设计/API协议/contract.md",
+      "sha256_before": "d912df9410d7f977120adab8b53b4e09cac0a1a61cfaaa77e1804386bd07eb93",
+      "sha256_after": "9eb4945e448c8e503eb15f8a4b2e7bb77ee8d6c880f59cd507be01ce6e2e7532",
+      "executable_logic_unchanged": true,
+      "validation": "Content excluding full-line documentation comments"
+    },
+    {
+      "file": "backend/bff/app/main.py",
+      "old_reference": "docs/api/openapi.md",
+      "new_reference": "指导/后端设计/API协议/openapi.md",
+      "sha256_before": "712bc107fdb6095830306610716a03ddcc3ef77a578f87711317faeaa6027be7",
+      "sha256_after": "a39d83bd93af4af5c8dfa59d76d600798b6b6717d3ccf1aa12479be5914db10a",
+      "executable_logic_unchanged": true,
+      "validation": "Python AST excluding docstrings"
+    },
+    {
+      "file": "backend/agent/app/api/chat_stream.py",
+      "old_reference": "docs/api/asyncapi.yaml",
+      "new_reference": "指导/后端设计/API协议/asyncapi.yaml",
+      "sha256_before": "7bc93e8e2280fcdc482f735deae3cc0c4a7616ab3e333ba0d8e0da01580aa81d",
+      "sha256_after": "7873768eaf8d44e143c6227d73c23fa43795236cdd8641de79066fd38fd622b5",
+      "executable_logic_unchanged": true,
+      "validation": "Python AST excluding docstrings"
+    }
+  ]
+}

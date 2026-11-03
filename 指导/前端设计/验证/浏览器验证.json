@@ -1,0 +1,335 @@
+{
+  "date": "2026-11-03",
+  "browser": "独立Chromium headless，本机直接file协议",
+  "passed": true,
+  "checks_count": 34,
+  "checks": [
+    {
+      "name": "单HTML直接file协议离线打开",
+      "passed": true
+    },
+    {
+      "name": "雅典娜图片已内嵌并加载",
+      "passed": true
+    },
+    {
+      "name": "桌面默认显示对话与雕像欢迎区",
+      "passed": true
+    },
+    {
+      "name": "桌面手机预览框响应正确",
+      "passed": true,
+      "detail": {
+        "stage": 412,
+        "main": 412,
+        "sidebar": "none",
+        "bottom": "flex"
+      }
+    },
+    {
+      "name": "深色主题可切换",
+      "passed": true
+    },
+    {
+      "name": "主题选择可在本地重开后保留",
+      "passed": true
+    },
+    {
+      "name": "320px无横向溢出",
+      "passed": true,
+      "detail": {
+        "viewport": 320,
+        "document": 320,
+        "stage": 320,
+        "main": 320,
+        "sidebar": "none",
+        "contentOverflow": false
+      }
+    },
+    {
+      "name": "320px内容占满可用列",
+      "passed": true,
+      "detail": {
+        "viewport": 320,
+        "document": 320,
+        "stage": 320,
+        "main": 320,
+        "sidebar": "none",
+        "contentOverflow": false
+      }
+    },
+    {
+      "name": "360px无横向溢出",
+      "passed": true,
+      "detail": {
+        "viewport": 360,
+        "document": 360,
+        "stage": 360,
+        "main": 360,
+        "sidebar": "none",
+        "contentOverflow": false
+      }
+    },
+    {
+      "name": "360px内容占满可用列",
+      "passed": true,
+      "detail": {
+        "viewport": 360,
+        "document": 360,
+        "stage": 360,
+        "main": 360,
+        "sidebar": "none",
+        "contentOverflow": false
+      }
+    },
+    {
+      "name": "390px无横向溢出",
+      "passed": true,
+      "detail": {
+        "viewport": 390,
+        "document": 390,
+        "stage": 390,
+        "main": 390,
+        "sidebar": "none",
+        "contentOverflow": false
+      }
+    },
+    {
+      "name": "390px内容占满可用列",
+      "passed": true,
+      "detail": {
+        "viewport": 390,
+        "document": 390,
+        "stage": 390,
+        "main": 390,
+        "sidebar": "none",
+        "contentOverflow": false
+      }
+    },
+    {
+      "name": "700px无横向溢出",
+      "passed": true,
+      "detail": {
+        "viewport": 700,
+        "document": 700,
+        "stage": 678,
+        "main": 678,
+        "sidebar": "none",
+        "contentOverflow": false
+      }
+    },
+    {
+      "name": "700px内容占满可用列",
+      "passed": true,
+      "detail": {
+        "viewport": 700,
+        "document": 700,
+        "stage": 678,
+        "main": 678,
+        "sidebar": "none",
+        "contentOverflow": false
+      }
+    },
+    {
+      "name": "720px无横向溢出",
+      "passed": true,
+      "detail": {
+        "viewport": 720,
+        "document": 720,
+        "stage": 698,
+        "main": 698,
+        "sidebar": "none",
+        "contentOverflow": false
+      }
+    },
+    {
+      "name": "760px无横向溢出",
+      "passed": true,
+      "detail": {
+        "viewport": 760,
+        "document": 760,
+        "stage": 738,
+        "main": 520,
+        "sidebar": "flex",
+        "contentOverflow": false
+      }
+    },
+    {
+      "name": "768px无横向溢出",
+      "passed": true,
+      "detail": {
+        "viewport": 768,
+        "document": 768,
+        "stage": 714,
+        "main": 496,
+        "sidebar": "flex",
+        "contentOverflow": false
+      }
+    },
+    {
+      "name": "1024px无横向溢出",
+      "passed": true,
+      "detail": {
+        "viewport": 1024,
+        "document": 1024,
+        "stage": 970,
+        "main": 752,
+        "sidebar": "flex",
+        "contentOverflow": false
+      }
+    },
+    {
+      "name": "1440px无横向溢出",
+      "passed": true,
+      "detail": {
+        "viewport": 1440,
+        "document": 1440,
+        "stage": 1386,
+        "main": 1168,
+        "sidebar": "flex",
+        "contentOverflow": false
+      }
+    },
+    {
+      "name": "手机正文14px、输入16px",
+      "passed": true
+    },
+    {
+      "name": "错题按英语筛选",
+      "passed": true,
+      "detail": 1
+    },
+    {
+      "name": "错题讲解返回对话并插入本地示例",
+      "passed": true
+    },
+    {
+      "name": "记忆卡翻面显示答案",
+      "passed": true
+    },
+    {
+      "name": "三张卡评价后完成",
+      "passed": true
+    },
+    {
+      "name": "可重开记忆卡复习",
+      "passed": true
+    },
+    {
+      "name": "更多工具可展开",
+      "passed": true
+    },
+    {
+      "name": "工具切换有明确反馈",
+      "passed": true
+    },
+    {
+      "name": "中文输入法组合状态Enter不误发",
+      "passed": true
+    },
+    {
+      "name": "本地发送按纯文本安全呈现",
+      "passed": true
+    },
+    {
+      "name": "新会话重置本地示例",
+      "passed": true
+    },
+    {
+      "name": "减少动态效果设置生效",
+      "passed": true
+    },
+    {
+      "name": "键盘焦点可见",
+      "passed": true
+    },
+    {
+      "name": "离线预览零外部HTTP请求",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "浏览器零脚本及控制台错误",
+      "passed": true,
+      "detail": []
+    }
+  ],
+  "responsive_metrics": [
+    {
+      "viewport": 320,
+      "document": 320,
+      "stage": 320,
+      "main": 320,
+      "sidebar": "none",
+      "contentOverflow": false
+    },
+    {
+      "viewport": 360,
+      "document": 360,
+      "stage": 360,
+      "main": 360,
+      "sidebar": "none",
+      "contentOverflow": false
+    },
+    {
+      "viewport": 390,
+      "document": 390,
+      "stage": 390,
+      "main": 390,
+      "sidebar": "none",
+      "contentOverflow": false
+    },
+    {
+      "viewport": 700,
+      "document": 700,
+      "stage": 678,
+      "main": 678,
+      "sidebar": "none",
+      "contentOverflow": false
+    },
+    {
+      "viewport": 720,
+      "document": 720,
+      "stage": 698,
+      "main": 698,
+      "sidebar": "none",
+      "contentOverflow": false
+    },
+    {
+      "viewport": 760,
+      "document": 760,
+      "stage": 738,
+      "main": 520,
+      "sidebar": "flex",
+      "contentOverflow": false
+    },
+    {
+      "viewport": 768,
+      "document": 768,
+      "stage": 714,
+      "main": 496,
+      "sidebar": "flex",
+      "contentOverflow": false
+    },
+    {
+      "viewport": 1024,
+      "document": 1024,
+      "stage": 970,
+      "main": 752,
+      "sidebar": "flex",
+      "contentOverflow": false
+    },
+    {
+      "viewport": 1440,
+      "document": 1440,
+      "stage": 1386,
+      "main": 1168,
+      "sidebar": "flex",
+      "contentOverflow": false
+    }
+  ],
+  "errors": [],
+  "external_requests": [],
+  "scope": "离线HTML设计原型的排版、交互与无外部依赖核验；不是业务端到端或性能帧率验收。",
+  "html_sha256": "3a5204524a5010b8b75166f3e14baedb92b23540cb8f64e2d2e89a683f120c66"
+}

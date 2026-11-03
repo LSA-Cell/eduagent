@@ -21,7 +21,7 @@ const _kRatingByFamiliarity = {
 
 /// 用户 API：资料 / 模型 / API Key / 错题 / 卡片 / 计划 / 口语
 ///
-/// 路径均与后端对齐（详见 docs/api/contract.md）：
+/// 路径均与后端对齐（详见 指导/后端设计/API协议/contract.md）：
 /// 资料走 BFF /users/me*，业务资源经 BFF 转发到 Agent 编排服务。
 class UserApi {
   UserApi(this._dio);

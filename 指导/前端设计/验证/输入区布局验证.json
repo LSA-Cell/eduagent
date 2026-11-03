@@ -1,0 +1,216 @@
+{
+  "date": "2026-11-03",
+  "passed": true,
+  "checks_count": 14,
+  "html_sha256": "3a5204524a5010b8b75166f3e14baedb92b23540cb8f64e2d2e89a683f120c66",
+  "checks": [
+    {
+      "name": "320px默认提示不换成孤行",
+      "passed": true,
+      "detail": {
+        "textWidth": 176,
+        "available": 258,
+        "inputBottom": 819.9375,
+        "actionsTop": 827.9375,
+        "sendTop": 827.9375,
+        "inputLeft": 27,
+        "composerLeft": 14,
+        "inputRight": 293,
+        "composerRight": 306,
+        "sendWidth": 44,
+        "sendHeight": 44,
+        "overflow": false
+      }
+    },
+    {
+      "name": "320px输入独占上排且按钮不重叠",
+      "passed": true,
+      "detail": {
+        "textWidth": 176,
+        "available": 258,
+        "inputBottom": 819.9375,
+        "actionsTop": 827.9375,
+        "sendTop": 827.9375,
+        "inputLeft": 27,
+        "composerLeft": 14,
+        "inputRight": 293,
+        "composerRight": 306,
+        "sendWidth": 44,
+        "sendHeight": 44,
+        "overflow": false
+      }
+    },
+    {
+      "name": "360px默认提示不换成孤行",
+      "passed": true,
+      "detail": {
+        "textWidth": 176,
+        "available": 298,
+        "inputBottom": 819.9375,
+        "actionsTop": 827.9375,
+        "sendTop": 827.9375,
+        "inputLeft": 27,
+        "composerLeft": 14,
+        "inputRight": 333,
+        "composerRight": 346,
+        "sendWidth": 44,
+        "sendHeight": 44,
+        "overflow": false
+      }
+    },
+    {
+      "name": "360px输入独占上排且按钮不重叠",
+      "passed": true,
+      "detail": {
+        "textWidth": 176,
+        "available": 298,
+        "inputBottom": 819.9375,
+        "actionsTop": 827.9375,
+        "sendTop": 827.9375,
+        "inputLeft": 27,
+        "composerLeft": 14,
+        "inputRight": 333,
+        "composerRight": 346,
+        "sendWidth": 44,
+        "sendHeight": 44,
+        "overflow": false
+      }
+    },
+    {
+      "name": "390px默认提示不换成孤行",
+      "passed": true,
+      "detail": {
+        "textWidth": 176,
+        "available": 328,
+        "inputBottom": 819.9375,
+        "actionsTop": 827.9375,
+        "sendTop": 827.9375,
+        "inputLeft": 27,
+        "composerLeft": 14,
+        "inputRight": 363,
+        "composerRight": 376,
+        "sendWidth": 44,
+        "sendHeight": 44,
+        "overflow": false
+      }
+    },
+    {
+      "name": "390px输入独占上排且按钮不重叠",
+      "passed": true,
+      "detail": {
+        "textWidth": 176,
+        "available": 328,
+        "inputBottom": 819.9375,
+        "actionsTop": 827.9375,
+        "sendTop": 827.9375,
+        "inputLeft": 27,
+        "composerLeft": 14,
+        "inputRight": 363,
+        "composerRight": 376,
+        "sendWidth": 44,
+        "sendHeight": 44,
+        "overflow": false
+      }
+    },
+    {
+      "name": "768px默认提示不换成孤行",
+      "passed": true,
+      "detail": {
+        "textWidth": 176,
+        "available": 378,
+        "inputBottom": 849,
+        "actionsTop": 857,
+        "sendTop": 857,
+        "inputLeft": 300,
+        "composerLeft": 287,
+        "inputRight": 686,
+        "composerRight": 699,
+        "sendWidth": 44,
+        "sendHeight": 44,
+        "overflow": false
+      }
+    },
+    {
+      "name": "768px输入独占上排且按钮不重叠",
+      "passed": true,
+      "detail": {
+        "textWidth": 176,
+        "available": 378,
+        "inputBottom": 849,
+        "actionsTop": 857,
+        "sendTop": 857,
+        "inputLeft": 300,
+        "composerLeft": 287,
+        "inputRight": 686,
+        "composerRight": 699,
+        "sendWidth": 44,
+        "sendHeight": 44,
+        "overflow": false
+      }
+    },
+    {
+      "name": "1440px默认提示不换成孤行",
+      "passed": true,
+      "detail": {
+        "textWidth": 176,
+        "available": 750,
+        "inputBottom": 849,
+        "actionsTop": 857,
+        "sendTop": 857,
+        "inputLeft": 450,
+        "composerLeft": 437,
+        "inputRight": 1208,
+        "composerRight": 1221,
+        "sendWidth": 44,
+        "sendHeight": 44,
+        "overflow": false
+      }
+    },
+    {
+      "name": "1440px输入独占上排且按钮不重叠",
+      "passed": true,
+      "detail": {
+        "textWidth": 176,
+        "available": 750,
+        "inputBottom": 849,
+        "actionsTop": 857,
+        "sendTop": 857,
+        "inputLeft": 450,
+        "composerLeft": 437,
+        "inputRight": 1208,
+        "composerRight": 1221,
+        "sendWidth": 44,
+        "sendHeight": 44,
+        "overflow": false
+      }
+    },
+    {
+      "name": "长文本最多六行并可滚动",
+      "passed": true,
+      "detail": {
+        "height": 144,
+        "scroll": 240,
+        "bottom": 663.9375,
+        "buttonTop": 671.9375
+      }
+    },
+    {
+      "name": "Shift+Enter保留手动换行",
+      "passed": true
+    },
+    {
+      "name": "发送后恢复两行输入高度",
+      "passed": true
+    },
+    {
+      "name": "窄屏长工具提示完整容纳",
+      "passed": true,
+      "detail": {
+        "height": 48,
+        "scroll": 48,
+        "bottom": 663.9375,
+        "buttonTop": 671.9375
+      }
+    }
+  ]
+}

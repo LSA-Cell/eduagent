@@ -14,7 +14,7 @@ from eduagent_shared import db
 from eduagent_shared.config import get_settings
 from eduagent_shared.logging import configure_logging, get_logger
 
-from app.routers import analytics, chat, flashcards, kb, mistakes, plans, teacher, voice
+from app.routers import analytics, chat, flashcards, kb, mistakes, plans, teacher, uploads, voice
 
 log = get_logger("agent.main")
 
@@ -40,6 +40,7 @@ def create_app() -> FastAPI:
     app.include_router(analytics.router)
     app.include_router(voice.router)
     app.include_router(kb.router)
+    app.include_router(uploads.router)
 
     # Wave B：编排层新端点（/v1/chat/stream、/v1/skills/toolbar、/v1/guardrails/confirms）
     from app.api import chat_stream, confirms, skills

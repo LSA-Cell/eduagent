@@ -7,7 +7,7 @@ import '../dio_client.dart';
 
 /// 教师端 API：学情看板 / 学情报告 / 资源库 / 认证。
 ///
-/// 路径与后端对齐（详见 docs/api/contract.md）：
+/// 路径与后端对齐（详见 指导/后端设计/API协议/contract.md）：
 /// - 看板：GET /analytics/knowledge-mastery（知识点掌握度矩阵）
 /// - 报告：POST /teacher/learning-analyses（202 异步）+ 轮询详情
 /// - 资源库：GET /teacher/{lesson-plans|presentations|exam-papers}

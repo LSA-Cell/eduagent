@@ -12,17 +12,22 @@ _make_proxy 统一完成：{item_id} 路径参数替换、query 透传、JSON bo
 from __future__ import annotations
 
 import json
+import re
 
 import httpx
 from fastapi import APIRouter, Depends, Request
 
 from ..deps import get_current_user, get_http_client, require_teacher
+from ..errors import AppError
 from ..services.forward import forward_to_agent
 
 router = APIRouter(tags=["business"])
 
 # (方法, 路径, 是否仅教师)；同一资源内字面量子路径须排在 {item_id} 之前
 _ROUTE_SPECS: list[tuple[str, str, bool]] = [
+    # 聊天媒体直传（仅鉴权后透传，文件流不经过 BFF）
+    ("POST", "/uploads/presign", False),
+    ("POST", "/uploads/confirm", False),
     # 错题本
     ("GET", "/mistakes", False),
     ("GET", "/mistakes/{item_id}", False),
@@ -116,4 +121,22 @@ async def create_upload_url(
         user_id=str(user.id),
         method="POST",
         json_body=body,
+    )
+
+
+@router.get("/files/{object_key:path}/url")
+async def get_file_url(
+    object_key: str,
+    user=Depends(get_current_user),
+    client: httpx.AsyncClient = Depends(get_http_client),
+):
+    """转发私有文件下载链接请求；归属与对象校验由 Agent 完成。"""
+    # 先限制路径字符，避免 httpx 规范化 ../、?、# 后访问其他内部路由。
+    if not re.fullmatch(
+        rf"u/{re.escape(str(user.id))}/[0-9a-f]{{32}}\.(?:jpg|jpeg|png|webp|m4a|wav|mp3|ogg)",
+        object_key,
+    ):
+        raise AppError(404, "not_found", "文件不存在")
+    return await forward_to_agent(
+        client, f"/files/{object_key}/url", user_id=str(user.id), method="GET"
     )

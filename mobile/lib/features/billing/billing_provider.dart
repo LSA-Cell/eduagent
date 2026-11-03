@@ -15,7 +15,7 @@ final subscriptionProvider =
 });
 
 /// mock 购买（dev/test）：下单 → mock 支付确认 → 刷新订阅状态。
-/// 真实支付渠道接入后替换为 IAP/收银台流程（见 docs/billing/spec.md §1.2）。
+/// 真实支付渠道接入后替换为 IAP/收银台流程（见 指导/后端设计/计费/spec.md §1.2）。
 Future<void> mockPurchase(WidgetRef ref, String planId) async {
   final api = ref.read(billingApiProvider);
   final order = await api.createOrder(planId);

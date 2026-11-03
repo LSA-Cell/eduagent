@@ -1,4 +1,4 @@
-"""平台兜底额度闸门（Billing v1，docs/billing/spec.md §4）。
+"""平台兜底额度闸门（Billing v1，指导/后端设计/计费/spec.md §4）。
 
 规则：
 - 有效套餐 = active 且未过期的订阅对应 plan；无订阅/已过期 = free 档；

@@ -6,10 +6,11 @@ settings.minio_bucket_uploads（默认私有，不设置任何公共访问策略
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from minio import Minio
+from minio.datatypes import PostPolicy
 
 from eduagent_shared.config import Settings
 
@@ -38,6 +39,20 @@ def ensure_bucket(client: Minio, bucket: str) -> None:
         client.make_bucket(bucket)
 
 
+def _public_signing_client(settings: Settings, internal_client: Minio, injected: bool) -> Minio:
+    """SigV4 包含 Host；公开 URL 必须由公开地址对应的客户端签发。"""
+    public_endpoint = getattr(settings, "minio_public_endpoint", None)
+    if injected or not public_endpoint or public_endpoint == settings.minio_endpoint:
+        return internal_client
+    return Minio(
+        public_endpoint,
+        access_key=settings.minio_access_key,
+        secret_key=settings.minio_secret_key,
+        secure=getattr(settings, "minio_public_use_ssl", settings.minio_use_ssl),
+        region="us-east-1",
+    )
+
+
 def create_presigned_put(
     object_key: str,
     *,
@@ -48,11 +63,43 @@ def create_presigned_put(
     """生成上传预签名 URL（PUT），expires 不得超过 MAX_PRESIGNED_EXPIRES。"""
     if not 0 < expires <= MAX_PRESIGNED_EXPIRES:
         raise ValueError(f"expires 须在 1~{MAX_PRESIGNED_EXPIRES} 秒之间")
-    client = client or get_minio_client(settings)
-    ensure_bucket(client, settings.minio_bucket_uploads)
-    return client.presigned_put_object(
+    internal_client = client or get_minio_client(settings)
+    ensure_bucket(internal_client, settings.minio_bucket_uploads)
+    signing_client = _public_signing_client(settings, internal_client, client is not None)
+    return signing_client.presigned_put_object(
         settings.minio_bucket_uploads, object_key, expires=timedelta(seconds=expires)
     )
+
+
+def create_presigned_post(
+    object_key: str,
+    content_type: str,
+    *,
+    settings: Settings,
+    max_size: int,
+    client: Optional[Minio] = None,
+    expires: int = DEFAULT_PRESIGNED_EXPIRES,
+) -> tuple[str, dict[str, str]]:
+    """签发固定对象键、媒体类型和文件大小的浏览器表单上传策略。"""
+    if not 0 < expires <= MAX_PRESIGNED_EXPIRES:
+        raise ValueError(f"expires 须在 1~{MAX_PRESIGNED_EXPIRES} 秒之间")
+    if max_size < 1:
+        raise ValueError("max_size must be positive")
+    signer = client or get_minio_client(settings)
+    ensure_bucket(signer, settings.minio_bucket_uploads)
+    policy = PostPolicy(
+        settings.minio_bucket_uploads,
+        datetime.now(timezone.utc) + timedelta(seconds=expires),
+    )
+    policy.add_equals_condition("key", object_key)
+    policy.add_equals_condition("Content-Type", content_type)
+    policy.add_content_length_range_condition(1, max_size)
+    fields = signer.presigned_post_policy(policy)
+    fields.update({"key": object_key, "Content-Type": content_type})
+    endpoint = getattr(settings, "minio_public_endpoint", settings.minio_endpoint)
+    secure = getattr(settings, "minio_public_use_ssl", settings.minio_use_ssl)
+    upload_url = f"{'https' if secure else 'http'}://{endpoint}/{settings.minio_bucket_uploads}"
+    return upload_url, fields
 
 
 def presigned_get(
@@ -65,9 +112,10 @@ def presigned_get(
     """生成下载预签名 URL（GET），供外部服务（如多模态）取文件。"""
     if not 0 < expires <= MAX_PRESIGNED_EXPIRES:
         raise ValueError(f"expires 须在 1~{MAX_PRESIGNED_EXPIRES} 秒之间")
-    client = client or get_minio_client(settings)
-    ensure_bucket(client, settings.minio_bucket_uploads)
-    return client.presigned_get_object(
+    internal_client = client or get_minio_client(settings)
+    ensure_bucket(internal_client, settings.minio_bucket_uploads)
+    signing_client = _public_signing_client(settings, internal_client, client is not None)
+    return signing_client.presigned_get_object(
         settings.minio_bucket_uploads, object_key, expires=timedelta(seconds=expires)
     )
 
@@ -83,6 +131,14 @@ def download_bytes(
     finally:
         response.close()
         response.release_conn()
+
+
+def stat_object(
+    object_key: str, *, settings: Settings, client: Optional[Minio] = None
+):
+    """读取对象大小及媒体类型；对象不存在时保留 S3 错误供路由转换。"""
+    client = client or get_minio_client(settings)
+    return client.stat_object(settings.minio_bucket_uploads, object_key)
 
 
 def remove_object(

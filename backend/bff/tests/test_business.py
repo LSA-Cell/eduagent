@@ -166,3 +166,53 @@ async def test_teacher_routes_require_teacher(client, downstream, user_store):
 async def test_business_routes_require_auth(client):
     resp = await client.get("/api/v1/mistakes")
     assert resp.status_code == 401
+
+
+@pytest.mark.parametrize("path,body", [
+    ("/uploads/presign", {"file_name": "image.jpg", "content_type": "image/jpeg", "size_bytes": 100, "purpose": "chat_image"}),
+    ("/uploads/confirm", {"object_key": "u/user/image.jpg", "purpose": "chat_image"}),
+])
+async def test_media_post_routes_forward_auth_and_payload(client, downstream, path, body):
+    token = await register_and_login(client)
+    response = await client.post(f"/api/v1{path}", json=body, headers=auth_headers(token))
+    assert response.status_code == 200
+    request = downstream[-1]
+    assert request.method == "POST"
+    assert request.url.path == path
+    assert json.loads(request.content) == body
+    assert request.headers["X-Internal-Token"]
+    assert request.headers["X-User-Id"]
+
+
+async def test_media_download_route_forwards_nested_object_key(client, downstream, user_store):
+    token = await register_and_login(client)
+    user = await user_store.get_by_phone("13800000001")
+    path = f"/files/u/{user.id}/{'a' * 32}.jpg/url"
+    response = await client.get(f"/api/v1{path}", headers=auth_headers(token))
+    assert response.status_code == 200
+    assert downstream[-1].url.path == path
+    assert downstream[-1].headers["X-User-Id"]
+
+
+@pytest.mark.parametrize("key", [
+    "%2e%2e/%2e%2e/v1/skills/toolbar%23",
+    "%2e%2e/%2e%2e/v1/skills/toolbar%3Frole=teacher%23",
+    "u/other-user/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg",
+    "u/user/invalid.jpg",
+])
+async def test_media_download_rejects_unsafe_keys_before_forwarding(client, downstream, key):
+    token = await register_and_login(client)
+    response = await client.get(f"/api/v1/files/{key}/url", headers=auth_headers(token))
+    assert response.status_code == 404
+    assert downstream == []
+
+
+@pytest.mark.parametrize("method,path", [
+    ("POST", "/uploads/presign"),
+    ("POST", "/uploads/confirm"),
+    ("GET", "/files/u/user/image.jpg/url"),
+])
+async def test_media_routes_require_auth(client, downstream, method, path):
+    response = await client.request(method, f"/api/v1{path}", json={})
+    assert response.status_code == 401
+    assert downstream == []

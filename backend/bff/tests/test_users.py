@@ -32,15 +32,23 @@ async def test_update_profile_requires_auth(client):
     assert resp.status_code == 401
 
 
-async def test_teacher_certification_accepted(client):
+async def test_teacher_certification_accepted(client, monkeypatch):
+    from app.routers import users
+
+    logged = []
+    monkeypatch.setattr(users.log, "info", lambda *args, **kwargs: logged.append((args, kwargs)))
     token = await register_and_login(client)
     resp = await client.post(
         "/api/v1/users/me/teacher-certification",
-        json={"file_url": "http://minio/eduagent-uploads/cert/a.pdf", "note": "教师资格证"},
+        json={"file_url": "http://minio/cert/a.pdf?X-Amz-Signature=private-token", "note": "教师资格证"},
         headers=auth_headers(token),
     )
     assert resp.status_code == 202
     assert resp.json()["status"] == "pending_review"
+    assert logged
+    assert "file_url" not in logged[-1][1]
+    assert "private-token" not in repr(logged)
+    assert "教师资格证" not in repr(logged)
 
 
 async def test_teacher_certification_validation(client):

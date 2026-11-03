@@ -67,7 +67,7 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(RequestLoggingMiddleware)
 
-    # 业务路由统一挂在 /api/v1 前缀下（对齐 docs/api/openapi.md 的 Base URL 与移动端
+    # 业务路由统一挂在 /api/v1 前缀下（对齐 指导/后端设计/API协议/openapi.md 的 Base URL 与移动端
     # AppConfig.apiPrefix；nginx 按原路径透传，不重写 URI）。ws 与 health 保持无前缀。
     app.include_router(auth.router, prefix="/api/v1")
     app.include_router(users.router, prefix="/api/v1")

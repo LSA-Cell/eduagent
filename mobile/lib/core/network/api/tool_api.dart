@@ -15,9 +15,11 @@ import '../dio_client.dart';
 /// 创建返回 202 {id, task_id, poll_url}；轮询 GET poll_url，
 /// 详情含 status（generating/ready|completed/failed）与 file_url/预览 JSON。
 class ToolApi {
-  ToolApi(this._dio);
+  ToolApi(this._dio, {Dio? uploadDio}) : _uploadDio = uploadDio ?? Dio();
 
   final Dio _dio;
+  // 存储直传不使用带用户鉴权拦截器的 API client。
+  final Dio _uploadDio;
 
   /// 生成类工具 → 资源路径
   static const Map<String, String> generationPaths = {
@@ -27,40 +29,130 @@ class ToolApi {
   };
 
   /// 生成成功终态（后端：presentations→ready，lesson/exam→completed）
-  static const Set<String> successStatuses = {'ready', 'completed', 'succeeded'};
+  static const Set<String> successStatuses = {
+    'ready',
+    'completed',
+    'succeeded'
+  };
 
-  /// 上传附件，返回可访问 URL。
-  ///
-  /// 二阶段上传：① POST /kb/documents/upload-url 换取 MinIO 预签名地址；
-  /// ② PUT 字节直传（预签名自带签名，不经鉴权拦截器）。
-  /// 注意：Agent 下游的 upload-url 实现尚未就位时 ① 会 4xx/5xx，
-  /// 调用方按上传失败处理（chat_provider 已捕获 DioException）。
+  /// 图片、音频、成绩文件和认证材料走表单直传，知识库文档走 PUT。
   Future<String> uploadFile(String path,
-      {void Function(int sent, int total)? onProgress}) async {
+      {bool certificationFile = false,
+      void Function(int sent, int total)? onProgress}) async {
     final fileName = path.split('/').last;
-    final resp = await _dio.post<Map<String, dynamic>>(
-      '${AppConfig.apiPrefix}/kb/documents/upload-url',
-      data: {'filename': fileName},
-    );
-    final data = resp.data ?? const {};
-    final uploadUrl =
-        (data['upload_url'] ?? data['url']) as String? ?? '';
-    if (uploadUrl.isEmpty) {
+    final extension = fileName.split('.').last.toLowerCase();
+    const contentTypes = {
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'webp': 'image/webp',
+      'm4a': 'audio/mp4',
+      'wav': 'audio/wav',
+      'mp3': 'audio/mpeg',
+      'ogg': 'audio/ogg',
+      'csv': 'text/csv',
+      'xlsx':
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'pdf': 'application/pdf',
+      'docx':
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'txt': 'text/plain',
+      'md': 'text/markdown',
+    };
+    final contentType = contentTypes[extension];
+    final file = File(path);
+    final size = await file.length();
+    final isReportFile = extension == 'csv' || extension == 'xlsx';
+    if (isReportFile && size > 5 * 1024 * 1024) {
       throw DioException(
-        requestOptions: resp.requestOptions,
-        error: 'upload-url 响应缺少预签名地址',
+        requestOptions: RequestOptions(path: path),
+        error: '成绩文件不能超过 5 MiB',
       );
     }
-    final bytes = await File(path).readAsBytes();
-    await Dio().put<void>(
-      uploadUrl,
-      data: bytes,
-      options: Options(headers: {'Content-Type': 'application/octet-stream'}),
-      onSendProgress: onProgress,
+    if (contentType == null ||
+        size <= 0 ||
+        size > 50 * 1024 * 1024 ||
+        (certificationFile && !{'pdf', 'jpg', 'png'}.contains(extension))) {
+      throw DioException(
+        requestOptions: RequestOptions(path: path),
+        error: '文件类型不支持、为空或超过 50MB',
+      );
+    }
+    final String? purpose = certificationFile
+        ? 'certification_file'
+        : contentType.startsWith('image/')
+            ? 'chat_image'
+            : contentType.startsWith('audio/')
+                ? 'chat_audio'
+                : isReportFile
+                    ? 'report_file'
+                    : null;
+    final resp = await _dio.post<Map<String, dynamic>>(
+      '${AppConfig.apiPrefix}${purpose == null ? '/kb/documents/upload-url' : '/uploads/presign'}',
+      data: purpose == null
+          ? {'filename': fileName, 'content_type': contentType, 'size': size}
+          : {
+              'file_name': fileName,
+              'content_type': contentType,
+              'size_bytes': size,
+              'purpose': purpose
+            },
     );
-    // 访问地址：响应显式给出 file_url 时优先，否则取预签名 URL 去查询串
-    return (data['file_url'] ?? data['object_url']) as String? ??
-        uploadUrl.split('?').first;
+    final data = resp.data ?? const {};
+    final uploadUrl = data['upload_url'] as String? ?? '';
+    final objectKey = data['object_key'] as String? ?? '';
+    final documentId = data['document_id'] as String? ?? '';
+    if (uploadUrl.isEmpty ||
+        (purpose == null ? documentId.isEmpty : objectKey.isEmpty)) {
+      throw DioException(
+        requestOptions: resp.requestOptions,
+        error: '上传响应缺少预签名地址或文件标识',
+      );
+    }
+    if (purpose == null) {
+      await _uploadDio.put<void>(
+        uploadUrl,
+        data: await file.readAsBytes(),
+        options: Options(headers: {
+          'Content-Type': contentType,
+          ...?data['headers'] as Map<String, dynamic>?
+        }),
+        onSendProgress: onProgress,
+      );
+    } else {
+      final fields = data['fields'];
+      if (data['method'] != 'POST' || fields is! Map<String, dynamic>) {
+        throw DioException(
+          requestOptions: resp.requestOptions,
+          error: '上传响应缺少表单字段',
+        );
+      }
+      await _uploadDio.post<void>(
+        uploadUrl,
+        data: FormData.fromMap({
+          ...fields,
+          'file': await MultipartFile.fromFile(path, filename: fileName),
+        }),
+        onSendProgress: onProgress,
+      );
+    }
+    final confirmed = await _dio.post<Map<String, dynamic>>(
+      '${AppConfig.apiPrefix}${purpose == null ? '/kb/documents/$documentId/confirm' : '/uploads/confirm'}',
+      data: purpose == null
+          ? null
+          : {'object_key': objectKey, 'purpose': purpose},
+    );
+    final url = (purpose == null
+            ? data['file_url']
+            : confirmed.data?['download_url']) as String? ??
+        '';
+    if (url.isEmpty) {
+      throw DioException(
+        requestOptions: confirmed.requestOptions,
+        error: '上传确认缺少下载地址',
+      );
+    }
+    return url;
   }
 
   /// 创建异步生成任务（PPT/教案/试卷走 docgen + Celery），返回轮询路径（poll_url）
@@ -81,8 +173,8 @@ class ToolApi {
   /// 查询生成任务状态：pollPath 即创建时返回的 poll_url（如 /teacher/presentations/{id}）。
   /// 响应为资源详情：status + file_url/预览 JSON。
   Future<Map<String, dynamic>> getGenerationTask(String pollPath) async {
-    final resp = await _dio
-        .get<Map<String, dynamic>>('${AppConfig.apiPrefix}$pollPath');
+    final resp =
+        await _dio.get<Map<String, dynamic>>('${AppConfig.apiPrefix}$pollPath');
     return resp.data ?? const {};
   }
 
@@ -171,4 +263,5 @@ class ToolApi {
   }
 }
 
-final toolApiProvider = Provider<ToolApi>((ref) => ToolApi(ref.read(dioProvider)));
+final toolApiProvider =
+    Provider<ToolApi>((ref) => ToolApi(ref.read(dioProvider)));
