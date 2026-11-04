@@ -1,0 +1,104 @@
+{
+  "html": "雅典娜美化方案.html",
+  "sha256": "c342e53e127407c243bb349a8903e778a9e546742347aa61bf57c9e4b5de2531",
+  "checks": [
+    {
+      "name": "初始化、唯一 ID、本地插画与四项导航",
+      "passed": true
+    },
+    {
+      "name": "模拟登录、个人资料修改和侧栏身份同步",
+      "passed": true
+    },
+    {
+      "name": "会员权益页与普通／会员预览切换",
+      "passed": true
+    },
+    {
+      "name": "教辅书架、添加、纯文本标题与内容预览",
+      "passed": true
+    },
+    {
+      "name": "新会话、多轮提问、回答收藏和首页统计联动",
+      "passed": true
+    },
+    {
+      "name": "历史搜索、恢复完整多轮会话、返回保留搜索状态",
+      "passed": true
+    },
+    {
+      "name": "聊天侧栏搜索、分组与会话恢复",
+      "passed": true
+    },
+    {
+      "name": "新对话撤销恢复原会话与草稿",
+      "passed": true
+    },
+    {
+      "name": "聊天模块历史入口、来源 Tab、搜索空态与恢复",
+      "passed": true
+    },
+    {
+      "name": "错题操作自动记录、返回筛选与历史定位",
+      "passed": true
+    },
+    {
+      "name": "卡片范围生成、翻面和按钮评分",
+      "passed": true
+    },
+    {
+      "name": "未知／多主题范围保留原卡组与进度",
+      "passed": true
+    },
+    {
+      "name": "旧卡组快照恢复题目、范围和已评进度",
+      "passed": true
+    },
+    {
+      "name": "滑动评分写入历史并能继续复习",
+      "passed": true
+    },
+    {
+      "name": "完成复习联动计划，已完成卡组可以重开",
+      "passed": true
+    },
+    {
+      "name": "导出包含完整会话、卡组历史与书架",
+      "passed": true
+    },
+    {
+      "name": "隐私重置恢复所有新增模块和默认样例",
+      "passed": true
+    },
+    {
+      "name": "正常动效下的推开侧栏、边缘返回与卡片翻转",
+      "passed": true
+    },
+    {
+      "name": "320px 手机画布：新增页面布局、长名称与深色主题",
+      "passed": true
+    },
+    {
+      "name": "375px 手机画布：新增页面布局、长名称与深色主题",
+      "passed": true
+    },
+    {
+      "name": "390px 手机画布：新增页面布局、长名称与深色主题",
+      "passed": true
+    },
+    {
+      "name": "430px 手机画布：新增页面布局、长名称与深色主题",
+      "passed": true
+    },
+    {
+      "name": "1440px 手机画布：新增页面布局、长名称与深色主题",
+      "passed": true
+    },
+    {
+      "name": "无脚本异常与外部网络请求",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "externalRequests": []
+}
