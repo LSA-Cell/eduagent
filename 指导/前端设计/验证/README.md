@@ -1,5 +1,24 @@
 # 离线设计稿验证
 
+## 原型功能集成（2026-11-04）
+
+[24 项集成回归](原型集成验证.json)通过，记录最终 HTML 的 SHA-256；[可复现脚本](原型集成回归.cjs)直接用 Chromium 打开本地 HTML。覆盖资料编辑、会员预览、教辅添加与纯文本展示、新会话与完整多轮恢复、回答收藏、侧栏搜索、新对话撤销、三模块历史、卡组快照与滑动评分、计划联动、导出和重置。包含正常动效下的推开侧栏及边缘返回，以及 320／375／390／430／1440px 的浅深色布局检查。脚本异常与外部 HTTP 请求均为零。
+
+预览：[我的 · 浅色](集成-我的-390.png)、[我的 · 深色窄屏](集成-我的-深色-320.png)、[卡片设定](集成-卡片-390.png)。以下各专项记录与旧截图保留为历史版本证据。
+
+在项目根目录复现，测试依赖安装到临时目录：
+
+```bash
+npm install --prefix /tmp/athena-browser-qa playwright
+/tmp/athena-browser-qa/node_modules/.bin/playwright install chromium
+PLAYWRIGHT_MODULE=/tmp/athena-browser-qa/node_modules/playwright \
+  node 指导/前端设计/验证/原型集成回归.cjs
+```
+
+验证产物默认写入系统临时目录 `athena-prototype-qa`。可以用脚本的第一个参数指定 HTML、第二个参数指定产物目录。HTML 预览本身不需要这些测试依赖。
+
+## 历史验证
+
 最终 HTML 通过 JavaScript 语法检查与独立 Chromium 的 34 项检查。直接以 file 协议打开，不依赖预览服务器；临时静态预览服务器已停止。
 
 - [浏览器验证明细](浏览器验证.json)：交互、输入法、文本安全、响应式与离线请求记录。
