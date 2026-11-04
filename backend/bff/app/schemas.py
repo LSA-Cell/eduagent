@@ -13,7 +13,7 @@ PhoneStr = Annotated[str, StringConstraints(pattern=r"^1[3-9]\d{9}$")]
 # 设置密码统一规则：8-128 位（前后端一致；登录入参不限长度，只做非空校验）
 PasswordStr = Annotated[str, StringConstraints(min_length=8, max_length=128)]
 
-ProviderName = Literal["openai", "deepseek", "claude", "gemini"]
+ProviderName = Literal["openai","deepseek","claude","gemini","moonshot",]
 UserMode = Literal["student", "teacher", "parent"]
 SmsSceneName = Literal["register", "login", "reset"]
 OAuthProviderName = Literal["wechat", "apple"]

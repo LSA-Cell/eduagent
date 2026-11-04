@@ -1,0 +1,60 @@
+{
+  "passed": true,
+  "checks_count": 13,
+  "html_sha256": "5210f99e2eb0e29465b711c451906ca2d72b5d3f2a59ec5a72a99613fc03dfe2",
+  "checks": [
+    {
+      "name": "320px学习足迹下第一项为总设置",
+      "passed": true
+    },
+    {
+      "name": "320px页面无横向溢出",
+      "passed": true
+    },
+    {
+      "name": "320px总设置可进入既有设置页",
+      "passed": true
+    },
+    {
+      "name": "390px学习足迹下第一项为总设置",
+      "passed": true
+    },
+    {
+      "name": "390px页面无横向溢出",
+      "passed": true
+    },
+    {
+      "name": "390px总设置可进入既有设置页",
+      "passed": true
+    },
+    {
+      "name": "768px学习足迹下第一项为总设置",
+      "passed": true
+    },
+    {
+      "name": "768px页面无横向溢出",
+      "passed": true
+    },
+    {
+      "name": "768px总设置可进入既有设置页",
+      "passed": true
+    },
+    {
+      "name": "1440px学习足迹下第一项为总设置",
+      "passed": true
+    },
+    {
+      "name": "1440px页面无横向溢出",
+      "passed": true
+    },
+    {
+      "name": "1440px总设置可进入既有设置页",
+      "passed": true
+    },
+    {
+      "name": "无脚本错误",
+      "passed": true
+    }
+  ],
+  "errors": []
+}

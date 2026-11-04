@@ -1016,7 +1016,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_user           ON orders(user_id, created_
 -- ---------- Billing 种子数据（三档，幂等） ----------
 INSERT INTO plans (id, name, price_cents, monthly_quota_cents, allowed_models, features, sort_order) VALUES
     ('free',        '免费版',   0,    300,
-     '["deepseek-chat", "deepseek-reasoner", "gpt-4o-mini", "gemini-2.5-flash", "gemini-1.5-flash", "claude-3-5-haiku"]',
+     '["deepseek-chat", "deepseek-reasoner", "gpt-4o-mini", "gemini-2.5-flash", "gemini-1.5-flash", "claude-3-5-haiku", "kimi-k3"]',
      '{"rag_max_docs": 3, "docgen_per_month": 5}', 0),
     ('pro',         'Pro 会员', 6800, 3000,
      '[]',

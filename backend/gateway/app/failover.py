@@ -82,7 +82,9 @@ class FailoverRouter:
     # ------------------------------------------------------------------
 
     def resolve_model(self, req: ChatCompletionRequest) -> str:
-        """学科路由：subject 命中映射且目标模型在 VLLM_ROUTES 中时优先学科模型。"""
+        if req.inference_source == "external" and req.model:
+            return req.model
+
         if req.subject:
             mapped = self.subject_map.get(req.subject)
             if mapped and mapped in self.settings.vllm_routes:

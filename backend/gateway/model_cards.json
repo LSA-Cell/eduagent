@@ -56,5 +56,15 @@
     "context_length": 1000000,
     "modalities": ["text", "image", "audio"],
     "subjects": ["general"]
+  },
+  {
+    "id": "kimi-k3",
+    "object": "model",
+    "owned_by": "moonshot",
+    "source": "external",
+    "provider": "moonshot",
+    "context_length": 1048576,
+    "modalities": ["text", "image"],
+    "subjects": ["general"]
   }
 ]

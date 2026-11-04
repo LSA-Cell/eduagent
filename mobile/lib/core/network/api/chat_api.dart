@@ -17,41 +17,36 @@ class ChatRequest {
     this.attachments = const [],
     this.tool,
     this.webSearch = false,
+    this.model,
+    this.provider,
+    this.inferenceSource = 'auto',
   });
 
   final String conversationId;
   final String content;
-
-  /// 附件 URL 列表（先经 /kb/documents/upload-url 上传）
   final List<String> attachments;
-
-  /// 指定工具 id（如 make_ppt），为空表示普通对话。
-  /// 后端 /chat/completions 暂无 tool 参数，仅作本地语义记录，不下发。
   final String? tool;
-
-  /// 联网搜索开关。后端暂无对应参数，仅作本地开关态，不下发。
   final bool webSearch;
 
-  /// BFF POST /chat/completions 入参（ChatCompletionRequest）：
-  /// {session_id?, messages: [{role, content}], stream: true}，
-  /// user_id 由 BFF 服务端注入，客户端不可伪造。
+  final String? model;
+  final String? provider;
+  final String inferenceSource;
+
   Map<String, dynamic> toJson() => {
-        // 本地离线会话 id（local_ 前缀）非 UUID，不下发
         if (!conversationId.startsWith('local_')) 'session_id': conversationId,
         'messages': [
           {'role': 'user', 'content': _contentPayload()},
         ],
         'stream': true,
+        if (model != null) 'model': model,
+        if (provider != null) 'provider': provider,
+        'inference_source': inferenceSource,
       };
-
-  /// 无附件时 content 为纯文本；有附件时按多模态分段携带
-  ///（附件以 text 分段附带 URL，BFF 持久化时拼接 text 部分）。
   Object _contentPayload() {
     if (attachments.isEmpty) return content;
     return [
       {'type': 'text', 'text': content},
-      for (final url in attachments)
-        {'type': 'text', 'text': '附件：$url'},
+      for (final url in attachments) {'type': 'text', 'text': '附件：$url'},
     ];
   }
 }
@@ -128,4 +123,5 @@ class ChatApi {
   }
 }
 
-final chatApiProvider = Provider<ChatApi>((ref) => ChatApi(ref.read(dioProvider)));
+final chatApiProvider =
+    Provider<ChatApi>((ref) => ChatApi(ref.read(dioProvider)));

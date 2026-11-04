@@ -1,0 +1,13 @@
+{
+  "scope": "athena-design",
+  "iteration": 12,
+  "verdict": "pass",
+  "method": "五页在320、390、1440px下共15组标题位置测量，以及我的页截图复核",
+  "fixed_findings": [
+    "我的页顶部宋体名称与其他四页统一为48px偏移、25px字号、40px行高。"
+  ],
+  "evidence": [
+    "标题统一-profile.png",
+    "标题高度统一验证.json"
+  ]
+}

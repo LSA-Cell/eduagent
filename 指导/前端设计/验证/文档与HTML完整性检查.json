@@ -7,15 +7,15 @@
     "后端设计": 9
   },
   "migration_hash_failures": [],
-  "local_links_checked": 213,
+  "local_links_checked": 214,
   "broken_local_links": [],
   "external_html_asset_dependencies": [],
   "unclassified_narrative_documents": [],
   "documentation_references_updated": 12,
   "executable_equivalence": true,
-  "standalone_html_bytes": 4007913,
+  "standalone_html_bytes": 4008297,
   "html_contains_embedded_image": true,
   "scope": "文档与离线设计稿核验；未执行数据库操作、未重新运行历史业务测试。",
   "passed": true,
-  "html_sha256": "3a5204524a5010b8b75166f3e14baedb92b23540cb8f64e2d2e89a683f120c66"
+  "html_sha256": "5210f99e2eb0e29465b711c451906ca2d72b5d3f2a59ec5a72a99613fc03dfe2"
 }

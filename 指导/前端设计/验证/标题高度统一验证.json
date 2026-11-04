@@ -1,0 +1,111 @@
+{
+  "passed": true,
+  "metrics": [
+    {
+      "width": 320,
+      "page": "chat",
+      "offset": 48,
+      "font": "25px",
+      "line": "40px"
+    },
+    {
+      "width": 320,
+      "page": "mistakes",
+      "offset": 48,
+      "font": "25px",
+      "line": "40px"
+    },
+    {
+      "width": 320,
+      "page": "cards",
+      "offset": 48,
+      "font": "25px",
+      "line": "40px"
+    },
+    {
+      "width": 320,
+      "page": "plans",
+      "offset": 48,
+      "font": "25px",
+      "line": "40px"
+    },
+    {
+      "width": 320,
+      "page": "profile",
+      "offset": 48,
+      "font": "25px",
+      "line": "40px"
+    },
+    {
+      "width": 390,
+      "page": "chat",
+      "offset": 48,
+      "font": "25px",
+      "line": "40px"
+    },
+    {
+      "width": 390,
+      "page": "mistakes",
+      "offset": 48,
+      "font": "25px",
+      "line": "40px"
+    },
+    {
+      "width": 390,
+      "page": "cards",
+      "offset": 48,
+      "font": "25px",
+      "line": "40px"
+    },
+    {
+      "width": 390,
+      "page": "plans",
+      "offset": 48,
+      "font": "25px",
+      "line": "40px"
+    },
+    {
+      "width": 390,
+      "page": "profile",
+      "offset": 48,
+      "font": "25px",
+      "line": "40px"
+    },
+    {
+      "width": 1440,
+      "page": "chat",
+      "offset": 48,
+      "font": "25px",
+      "line": "40px"
+    },
+    {
+      "width": 1440,
+      "page": "mistakes",
+      "offset": 48,
+      "font": "25px",
+      "line": "40px"
+    },
+    {
+      "width": 1440,
+      "page": "cards",
+      "offset": 48,
+      "font": "25px",
+      "line": "40px"
+    },
+    {
+      "width": 1440,
+      "page": "plans",
+      "offset": 48,
+      "font": "25px",
+      "line": "40px"
+    },
+    {
+      "width": 1440,
+      "page": "profile",
+      "offset": 48,
+      "font": "25px",
+      "line": "40px"
+    }
+  ],
+  "errors": []
+}

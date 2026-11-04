@@ -9,6 +9,7 @@ import '../../../core/network/dio_client.dart';
 import '../../../core/storage/local_db.dart';
 import '../../../models/conversation.dart';
 import '../../../models/message.dart';
+import '../../auth/auth_provider.dart';
 
 class ChatState {
   const ChatState({
@@ -177,11 +178,17 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     final buffer = StringBuffer();
     try {
+      final selectedModel =
+          _ref.read(authProvider).user?.selectedModel ?? 'auto';
+      final useKimi = selectedModel.startsWith('kimi-');
       final req = ChatRequest(
         conversationId: convId,
         content: text,
         attachments: attachments,
         webSearch: state.webSearchEnabled,
+        model: useKimi ? selectedModel : null,
+        provider: useKimi ? 'moonshot' : null,
+        inferenceSource: useKimi ? 'external' : 'auto',
       );
       await for (final event in _chatApi.streamChat(req)) {
         if (event.isDone || event.event == 'done') break;
@@ -245,7 +252,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
         else
           m,
     ];
-    state = state.copyWith(messages: messages, isStreaming: false, error: reason);
+    state =
+        state.copyWith(messages: messages, isStreaming: false, error: reason);
   }
 
   // ---------------- 工具调用 ----------------
@@ -327,8 +335,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   /// 文档生成类工具（PPT/教案/试卷）：插入系统消息 → 创建异步任务 →
   /// 轮询状态 → 完成后追加对应预览卡片消息
-  Future<void> runGenerationTask(String toolId, String toolLabel,
-      Map<String, dynamic> payload) async {
+  Future<void> runGenerationTask(
+      String toolId, String toolLabel, Map<String, dynamic> payload) async {
     final convId = await _ensureConversation('[$toolLabel]');
     final sysMsg = ChatMessage(
       id: _uuid.v4(),

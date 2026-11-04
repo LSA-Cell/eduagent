@@ -27,6 +27,45 @@
 [data-reduce-motion="true"] *,[data-reduce-motion="true"] *::before,[data-reduce-motion="true"] *::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}
 @container product (max-width:700px){.profile-hero{gap:12px;padding-bottom:20px}.profile-hero .avatar{width:52px;height:52px;font-size:22px}.profile-hero .guest-avatar{font-size:11px}.profile-hero h3{font-size:21px}.profile-hero p{font-size:11px}.profile-account-action{font-size:11px;padding:8px 12px}.profile-identity{min-width:110px}.profile-disclaimer{font-size:10px;margin:14px 0 20px}.profile-link{padding:15px 0;gap:12px}.profile-link strong{font-size:14px}.profile-link small{font-size:11px}.profile-section-head h3{font-size:25px}.profile-field input,.profile-field select,.profile-field textarea,.history-search{font-size:16px}.profile-detail-row{gap:12px}.profile-theme-options{gap:6px}.profile-choice{padding:8px 12px}.profile-group-title{margin-top:24px}}
 
+
+/* Personal hub: identity, learning shortcuts, recent content and service rows. */
+.profile-content{max-width:820px}.profile-kicker{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.profile-kicker .olive-branch{width:54px;height:26px}.profile-hero{padding:0;gap:16px;flex-wrap:nowrap}.profile-hero .avatar{width:64px;height:64px;font-size:28px;min-height:44px}.profile-hero .guest-avatar{font-size:12px}.profile-identity{min-width:0}.profile-hero h3{margin:0 0 4px;font:24px/1.4 var(--serif);overflow-wrap:anywhere}.profile-hero p{margin:0;font-size:13px;line-height:1.7}.profile-account-action{font-size:13px;padding:10px 14px;flex:none}.profile-disclaimer{font-size:12px;margin:14px 0 20px;line-height:1.7}.profile-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:17px 4px;gap:4px}.profile-shortcuts button{min-height:85px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:4px}.profile-shortcuts .icon{width:25px;height:25px;color:var(--clay);margin-bottom:3px}.profile-shortcuts strong{font-size:15px;font-weight:500}.profile-shortcuts small{font-size:12px;color:var(--muted)}.profile-block-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:20px 0 6px}.profile-block-head h3{font-size:16px;font-weight:600;margin:0}.profile-block-head button{min-height:44px;font-size:12px;padding:0}.profile-recent{width:100%;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:7px;padding:18px 20px;background:var(--olive-tint);border-radius:10px;color:var(--ink)}.profile-recent-meta{font-size:12px;color:var(--olive)}.profile-recent strong{font:19px/1.6 var(--serif);overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}.profile-recent>span:not(.profile-recent-meta):not(.profile-recent-action){font-size:13px;line-height:1.8;color:var(--muted);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}.profile-recent-action{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--olive);margin-top:5px}.profile-recent-action .icon{width:16px;height:16px}.profile-group-title{font-size:13px;color:var(--muted);letter-spacing:.04em;margin:26px 0 10px}.profile-menu{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:0 16px}.profile-menu .profile-link{min-height:60px;padding:12px 0;gap:10px}.profile-menu .profile-link:last-child{border-bottom:0}.profile-link strong{font-size:15px}.profile-link-hint{font-size:12px;color:var(--muted);text-align:right}.profile-section-head{margin:6px 0 20px}.profile-section-head .eyebrow{display:none}.profile-section-head h3{margin:4px 0 8px}.profile-section-head p,.profile-detail-row p,.profile-faq p,.history-actions button{font-size:13px}.profile-back{font-size:13px}.history-search-label{font-size:13px}.history-entry h4{font-size:16px}.history-entry p{font-size:13px}.profile-empty{padding:20px 0 8px}.profile-empty-action{min-height:44px;font-size:14px;color:var(--clay)}.profile-status{font-size:13px}.profile-faq summary{font-size:14px}.profile-form .small{font-size:13px}
+@container product (max-width:700px){.profile-content{padding:22px 20px 28px}.profile-kicker{margin-bottom:14px}.profile-hero{gap:12px;padding:0}.profile-hero .avatar{width:56px;height:56px;font-size:25px}.profile-hero .guest-avatar{font-size:11px}.profile-hero h3{font-size:21px}.profile-hero p{font-size:12px}.profile-account-action{font-size:12px;padding:8px 10px}.profile-disclaimer{font-size:12px;margin:12px 0 18px}.profile-shortcuts{padding:14px 3px}.profile-shortcuts strong{font-size:15px}.profile-block-head{margin-top:18px}.profile-recent{padding:16px}.profile-recent strong{font-size:18px}.profile-group-title{margin-top:22px}.profile-link-hint{font-size:12px}.profile-menu{padding:0 12px}.profile-menu .profile-link{gap:8px}.profile-menu .profile-link>.icon{width:19px}.profile-menu .profile-chevron{width:12px}}
+@container product (max-width:350px){.profile-content{padding-left:16px;padding-right:16px}.profile-hero{gap:8px}.profile-hero .avatar{width:48px;height:48px}.profile-hero h3{font-size:19px}.profile-hero p{font-size:12px}.profile-account-action{padding:8px;font-size:12px}.profile-shortcuts small{font-size:11px}.profile-link-hint{font-size:11px}}
+@media(max-width:760px){.stage,.stage.phone-mode{height:calc(100dvh - 180px);min-height:0}.toast{bottom:84px;pointer-events:none}}
+
+/* Membership and personal books share the paper, terracotta and olive palette. */
+.member-card{display:flex;flex-direction:column;gap:12px;width:100%;padding:20px 22px;margin:0 0 20px;border:1px solid color-mix(in srgb,var(--clay) 35%,var(--line));background:var(--clay-tint);border-radius:12px;text-align:left;color:var(--ink)}.member-card-top,.member-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%}.member-card-top strong{font-size:17px;font-weight:600}.member-badge{font-size:11px;color:var(--clay);border:1px solid color-mix(in srgb,var(--clay) 40%,transparent);padding:2px 8px;border-radius:20px;white-space:nowrap}.member-card-title{font:22px/1.5 var(--serif)}.member-card-bottom{font-size:12px;color:var(--muted)}.member-card-action{color:var(--clay);white-space:nowrap}.membership-intro{padding:22px;background:var(--clay-tint);border-radius:12px}.membership-intro h4{font:25px/1.6 var(--serif);margin:12px 0}.membership-intro p{font-size:13px;color:var(--muted);margin:0}.member-benefits{margin:8px 0 24px}.member-benefits article{display:flex;gap:16px;padding:20px 0;border-bottom:1px solid var(--line)}.member-benefits .icon{color:var(--clay);margin-top:4px}.member-benefits h4{font-size:16px;font-weight:500;margin:0 0 6px}.member-benefits p{font-size:13px;color:var(--muted);line-height:1.8;margin:0}.book-shelf{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 12px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}.book-tile{min-width:0;display:flex;flex-direction:column;text-align:left;gap:8px;padding:0;flex:0 0 108px}.book-cover{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;width:100%;min-height:148px;padding:14px 12px;border:1px solid var(--line);border-radius:3px 10px 10px 3px;background:var(--olive-tint);color:var(--ink)}.book-cover[data-subject="数学"]{background:var(--clay-tint)}.book-cover[data-subject="英语"]{background:var(--surface-alt)}.book-cover small{font-size:10px;letter-spacing:.12em;color:var(--muted)}.book-cover strong{font:18px/1.5 var(--serif);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.book-cover .icon{width:23px;height:23px;color:var(--olive)}.book-tile>span:last-child{font-size:12px;color:var(--muted)}.book-add .book-cover{background:transparent;border:1px dashed var(--soft);align-items:center;justify-content:center;gap:10px}.book-add .book-cover strong{font:14px var(--sans)}.book-add .book-cover b{font:30px var(--latin);color:var(--clay)}.book-caption{font-size:12px;color:var(--muted);margin:0 0 4px}.book-library{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:22px 16px;margin-bottom:20px}.book-library .book-tile{width:100%}.book-reading{padding:22px;background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-bottom:16px}.book-reading h4{font:23px/1.6 var(--serif);overflow-wrap:anywhere;margin:10px 0}.book-reading p,.book-reading li{font-size:14px;line-height:1.9}.book-reading ol{padding-left:22px}.book-reading .small{font-size:12px}
+@container product (max-width:700px){.member-card{padding:17px 16px;gap:10px}.member-card-title{font-size:20px}.member-card-bottom{align-items:flex-start;gap:8px}.member-card-bottom>span:first-child{max-width:190px;line-height:1.8}.book-shelf{gap:12px}.book-tile{flex-basis:100px}.book-cover{min-height:140px}.membership-intro{padding:18px}.membership-intro h4{font-size:23px}}
+
+.card-ai-form{padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:0 0 26px}.card-ai-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}.card-ai-heading label{font-size:16px;font-weight:600}.card-ai-heading>span{font-size:12px;color:var(--muted)}.card-ai-form textarea{display:block;width:100%;min-height:88px;max-height:240px;resize:vertical;padding:12px 14px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);font:16px/1.7 var(--sans);overflow-wrap:anywhere}.card-ai-form textarea::placeholder{color:var(--muted)}.card-scope-examples{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.card-scope-examples button{min-height:44px;padding:6px 10px;font-size:12px;color:var(--clay);border-radius:6px;background:var(--clay-tint)}.card-ai-footer{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-top:14px}.card-ai-footer p{font-size:12px;line-height:1.8;color:var(--muted);margin:0;max-width:42em}.card-ai-footer button{flex:none;min-height:44px;font-size:14px}.card-ai-status{font-size:13px;line-height:1.8;margin:12px 0 0;color:var(--olive);overflow-wrap:anywhere}.card-ai-status:empty{display:none}.card-ai-status[data-error="true"]{color:var(--clay)}#card-active-scope{max-width:75%;overflow-wrap:anywhere}
+@container product (max-width:700px){.card-ai-form{padding:16px;margin-bottom:22px}.card-ai-heading{align-items:flex-start}.card-ai-heading>span{font-size:11px}.card-ai-footer{flex-direction:column;align-items:stretch;gap:12px}.card-ai-footer button{align-self:flex-end}.card-scope-examples button{font-size:11px;padding:6px 8px}.card-ai-footer p{font-size:12px}}
+/* This design artifact now exposes only the mobile layout. */
+.stage.phone-mode{height:min(850px,calc(100dvh - 141px));min-height:0;max-height:none}
+@media(max-width:760px){.stage.phone-mode{height:calc(100dvh - 180px)}}
+/* Keep Songti page headings on one shared vertical grid. */
+:root{--page-heading-size:25px;--page-heading-line:40px;--page-heading-inset:24px;--page-heading-label-height:14px;--page-heading-label-gap:10px}
+@container product (max-width:700px){
+.hero{align-items:flex-start;padding-top:var(--page-heading-inset)}
+.content-panel:not(.profile-content){padding-top:var(--page-heading-inset)}
+.hero .eyebrow,.section-top .eyebrow{display:block;font-size:10px;line-height:var(--page-heading-label-height);min-height:var(--page-heading-label-height);margin:0 0 var(--page-heading-label-gap);letter-spacing:.17em}
+.hero h2,.section-top h2{font-family:var(--serif);font-size:var(--page-heading-size);line-height:var(--page-heading-line);font-weight:500;letter-spacing:.06em;margin:0}
+.hero p,.section-top p{margin:8px 0 0}
+}
+/* Profile identity shares the same title grid as the learning pages. */
+@container product (max-width:700px){
+.profile-content{padding-top:var(--page-heading-inset)}
+.profile-kicker{height:var(--page-heading-label-height);margin:0 0 var(--page-heading-label-gap);align-items:center}
+.profile-kicker .eyebrow{font-size:10px;line-height:var(--page-heading-label-height);letter-spacing:.17em}
+.profile-kicker .olive-branch{height:var(--page-heading-label-height)}
+.profile-hero{align-items:flex-start}
+.profile-hero h3{font-size:var(--page-heading-size);line-height:var(--page-heading-line);font-weight:500;letter-spacing:.06em;margin:0 0 4px}
+.profile-hero .avatar{margin-top:2px}
+.profile-account-action{margin-top:2px}
+}
+
+.module-history-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:4px 6px;white-space:nowrap;font-size:12px;color:var(--clay);margin-left:auto;flex:none}.module-history-head h2{font:25px/40px var(--serif);margin:8px 0}.module-history-head p{font-size:12px;color:var(--muted);margin:0 0 20px}.module-history-empty{font-size:14px;color:var(--muted);padding:22px 0}.module-history-head{margin-bottom:16px}
+@container product (max-width:700px){.product-header{gap:8px}.header-title{flex:1}.module-history-button{font-size:12px}.mobile-new{min-width:36px}.header-context{max-width:100px}}
 </style>
 </head>
 <body>
@@ -62,13 +101,12 @@
 <header class="review-bar" aria-label="设计稿预览控制">
   <div class="review-title"><div class="review-monogram" aria-hidden="true">A</div><div><strong>雅典娜之学 · 前端视觉提案</strong><p>本地设计预览 · 示例数据 · 未连接模型</p></div></div>
   <div class="review-actions">
-    <div class="segmented" role="group" aria-label="预览设备"><button type="button" data-device="desktop" aria-pressed="true">桌面</button><button type="button" data-device="phone" aria-pressed="false">手机</button></div>
     <button class="review-theme" type="button" id="theme-toggle" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-moon"/></svg><span>夜间自习</span></button>
     <a class="review-link" href="视觉设计说明.md">设计说明 ↗</a>
   </div>
 </header>
 <div class="stage-shell">
-<div class="stage" id="stage">
+<div class="stage phone-mode" id="stage">
   <aside class="sidebar" aria-label="主要导航">
     <div class="brand"><svg class="brand-mark" fill="none" stroke="currentColor" stroke-width="1.1" aria-hidden="true"><use href="#i-temple"/></svg><div><strong>雅典娜之学</strong><span>EDUAGENT · ATHENA</span></div></div>
     <button class="new-chat" type="button" data-action="new-chat"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>开启新对话</button>
@@ -76,15 +114,16 @@
     <nav class="nav-list" aria-label="学习页面">
       <button type="button" class="nav-button" data-page="chat" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>对话</button>
       <button type="button" class="nav-button" data-page="mistakes"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg>错题本<span class="nav-count">4</span></button>
-      <button type="button" class="nav-button" data-page="cards"><svg class="icon" aria-hidden="true"><use href="#i-cards"/></svg>记忆卡片<span class="nav-count">3</span></button>
+      <button type="button" class="nav-button" data-page="cards"><svg class="icon" aria-hidden="true"><use href="#i-cards"/></svg>知识卡片<span class="nav-count">3</span></button>
       <button type="button" class="nav-button" data-page="plans"><svg class="icon" aria-hidden="true"><use href="#i-plan"/></svg>学习计划</button>
     </nav>
     <div class="sidebar-note"><svg class="olive-branch" aria-hidden="true"><use href="#i-olive"/></svg><p>每一次追问，<br>都向智慧更近一步。</p></div>
     <div class="sidebar-foot"><button type="button" class="profile-nav" data-page="profile"><span class="avatar" aria-hidden="true">学</span><span class="profile-meta"><b id="sidebar-profile-name" style="font-weight:400">我的学习空间</b><span id="sidebar-profile-state">访客体验</span></span><svg class="icon" aria-hidden="true"><use href="#i-right"/></svg></button></div>
   </aside>
   <main class="main">
-    <header class="product-header"><div class="header-title"><h1 id="page-title">对话</h1><span class="header-divider" aria-hidden="true"></span><span class="header-context" id="page-context">数学 · 一元二次方程</span></div><div class="header-right"><span class="dot" aria-hidden="true"></span>A PLACE FOR THOUGHT</div><button class="mobile-new" type="button" data-action="new-chat" aria-label="开启新对话"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button></header>
+    <header class="product-header"><div class="header-title"><h1 id="page-title">对话</h1><span class="header-divider" aria-hidden="true"></span><span class="header-context" id="page-context">数学 · 一元二次方程</span></div><div class="header-right"><span class="dot" aria-hidden="true"></span>A PLACE FOR THOUGHT</div><button class="module-history-button" id="module-history-open" type="button">历史记录</button><button class="mobile-new" type="button" data-action="new-chat" aria-label="开启新对话"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button></header>
     <div class="panels">
+      <section class="panel" id="panel-modulehistory" aria-label="模块历史记录" hidden><div class="content-panel"><button type="button" class="profile-back" id="module-history-back">‹ 返回</button><div class="module-history-head"><h2 id="module-history-title">聊天历史</h2><p>离线演示 · 本次操作刷新后重置</p></div><label class="history-search-label" for="module-history-search">搜索记录<input class="history-search" type="search" id="module-history-search" placeholder="输入标题或知识点"></label><div id="module-history-list"></div></div></section>
       <section class="panel chat-panel" id="panel-chat" aria-label="对话学习示例">
         <div class="conversation-scroll" id="conversation-scroll">
           <div class="reading-column">
@@ -107,7 +146,7 @@
         </div>
         <div class="chat-dock"><div class="dock-inner">
           <div class="tools" aria-label="学习工具"><button class="tool-button" type="button" data-tool="拍照答疑"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>拍照答疑</button><button class="tool-button" type="button" data-tool="作业批改"><svg class="icon" aria-hidden="true"><use href="#i-checklist"/></svg>作业批改</button><button class="tool-button" type="button" data-tool="文档解析"><svg class="icon" aria-hidden="true"><use href="#i-document"/></svg>文档解析</button><button class="tool-button" type="button" data-tool="口语对练"><svg class="icon" aria-hidden="true"><use href="#i-mic"/></svg>口语对练</button><button class="tool-button more-tools" type="button" id="more-tools" aria-expanded="false" aria-controls="extra-tools">更多工具<svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></button></div>
-          <div class="extra-tools" id="extra-tools" hidden><button type="button" class="tool-button" data-tool="公式助手">公式助手</button><button type="button" class="tool-button" data-tool="化学方程式">化学方程式</button><button type="button" class="tool-button" data-tool="知识点检测">知识点检测</button><button type="button" class="tool-button" data-page="plans">学习计划</button><button type="button" class="tool-button" data-page="mistakes">错题本</button><button type="button" class="tool-button" data-page="cards">记忆卡片</button><button type="button" class="tool-button" data-tool="作文辅导">作文辅导</button><button type="button" class="tool-button" id="web-search" aria-pressed="false">联网搜索</button></div>
+          <div class="extra-tools" id="extra-tools" hidden><button type="button" class="tool-button" data-tool="公式助手">公式助手</button><button type="button" class="tool-button" data-tool="化学方程式">化学方程式</button><button type="button" class="tool-button" data-tool="知识点检测">知识点检测</button><button type="button" class="tool-button" data-page="plans">学习计划</button><button type="button" class="tool-button" data-page="mistakes">错题本</button><button type="button" class="tool-button" data-page="cards">知识卡片</button><button type="button" class="tool-button" data-tool="作文辅导">作文辅导</button><button type="button" class="tool-button" id="web-search" aria-pressed="false">联网搜索</button></div>
           <form class="composer" id="chat-form"><button class="attachment" type="button" id="attachment-button" aria-label="选择本地文件进行预览"><svg class="icon" aria-hidden="true"><use href="#i-paperclip"/></svg></button><input type="file" id="file-input" hidden><label class="sr-only" for="chat-input">输入你的学习问题</label><textarea id="chat-input" rows="1" maxlength="2000" placeholder="写下问题，一起想明白。"></textarea><button class="send-button" type="submit" aria-label="发送示例问题"><svg class="icon" aria-hidden="true"><use href="#i-send"/></svg></button></form>
           <div class="dock-caption"><span id="tool-status">学贵有疑，问有所思。</span><span class="keyboard-hint">Enter 发送 · Shift + Enter 换行</span></div>
         </div></div>
@@ -122,9 +161,10 @@
           <article class="mistake-item" data-mistake-subject="物理"><div><p class="subject-label">物理 · 牛顿第二定律</p><h3>合力不变时，质量增大会怎样影响加速度？</h3><p class="explanation">先写出 F = ma，再讨论变量关系。</p><div class="item-actions"><button type="button" class="text-button" data-explain="牛顿第二定律"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg>讲解</button><button type="button" class="text-button" data-practice="牛顿第二定律"><svg class="icon" aria-hidden="true"><use href="#i-pen"/></svg>变式练习</button></div></div><div class="mastery"><p>掌握度<strong>55%</strong></p><progress value="55" max="100" aria-label="牛顿第二定律掌握度55%"></progress></div></article>
         </div>
       </div></section>
-      <section class="panel" id="panel-cards" aria-label="记忆卡片示例" hidden><div class="content-panel">
+      <section class="panel" id="panel-cards" aria-label="知识卡片示例" hidden><div class="content-panel">
         <div class="section-top"><div><div class="eyebrow">A LITTLE, WELL REMEMBERED</div><h2>让知识，留下来。</h2><p>慢一点想起，记得更长久。</p></div><span class="section-ornament" aria-hidden="true">ψ</span></div>
-        <div id="card-review"><div class="review-progress"><span>数学 · 基础巩固</span><span><strong id="review-index">1</strong> / 3</span></div><div class="review-line" role="progressbar" aria-label="本轮记忆卡复习进度" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0" id="card-progress"><span id="card-progress-line"></span></div>
+        <form class="card-ai-form" id="card-ai-form"><div class="card-ai-heading"><label for="card-ai-scope">AI 出题设定</label><span>按范围生成卡片</span></div><textarea id="card-ai-scope" rows="2" maxlength="300" required placeholder="例如：初中数学，一元二次方程，基础巩固" aria-describedby="card-ai-note card-ai-status"></textarea><div class="card-scope-examples" aria-label="试用范围"><button type="button" data-card-scope="初中数学：一元二次方程，基础巩固">一元二次方程</button><button type="button" data-card-scope="英语：现在完成时，概念与例句">现在完成时</button><button type="button" data-card-scope="初中物理：牛顿第二定律，基础理解">牛顿第二定律</button></div><div class="card-ai-footer"><p id="card-ai-note">离线 demo：支持以上三种范围，每次替换为 3 张预置题卡并重置复习进度；尚未连接 AI。</p><button type="submit" class="primary-button" id="card-ai-generate">生成卡片</button></div><p class="card-ai-status" id="card-ai-status" role="status" aria-live="polite"></p></form>
+        <div id="card-review"><div class="review-progress"><span id="card-active-scope">数学 · 基础巩固</span><span><strong id="review-index">1</strong> / 3</span></div><div class="review-line" role="progressbar" aria-label="本轮记忆卡复习进度" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0" id="card-progress"><span id="card-progress-line"></span></div>
         <button type="button" class="review-card" id="review-card" aria-label="翻转卡片，查看答案" aria-pressed="false"><span class="card-number" aria-hidden="true" id="card-number">I</span><span class="card-type" id="card-type">问题 / QUESTION</span><span class="card-question" id="card-question">一元二次方程的求根公式是什么？</span><span class="card-hint"><svg class="icon" aria-hidden="true"><use href="#i-flip"/></svg><span id="card-hint">轻点卡片，查看答案</span></span></button>
         <div class="rating-actions" role="group" aria-label="评价记忆程度"><button class="rating" type="button" data-rating="忘记"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>忘记</button><button class="rating" type="button" data-rating="模糊"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg>模糊</button><button class="rating" type="button" data-rating="记得"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>记得</button></div><p class="review-instruction">不用急着翻面，先给自己一点思考的时间。</p></div>
         <div class="complete" id="card-complete" hidden><svg class="olive-branch" aria-hidden="true"><use href="#i-olive"/></svg><h3>本轮复习完成。</h3><p id="review-summary">你已经走完了 3 张示例卡片。</p><button class="primary-button" type="button" id="restart-review">再来一轮<svg class="icon" aria-hidden="true"><use href="#i-flip"/></svg></button></div>
@@ -132,24 +172,31 @@
       <section class="panel" id="panel-plans" aria-label="学习计划示例" hidden><div class="content-panel">
         <div class="section-top"><div><div class="eyebrow">THOUGHT INTO PRACTICE</div><h2>循序，向前。</h2><p>让学习有方向，也给思考留余地。</p></div><span class="section-ornament" aria-hidden="true">π</span></div>
         <div class="plans-intro"><div class="plan-date" aria-hidden="true"><strong>03</strong><span>NOVEMBER</span></div><div><h3>今天的学习计划</h3><p>示例安排 · 一次专注，一点收获</p></div></div>
-        <ul class="plan-list"><li><span class="plan-icon" aria-hidden="true"><svg class="icon"><use href="#i-book"/></svg></span><div class="plan-copy"><strong>理解一元二次方程</strong><p>从错题中重新梳理解题思路</p></div><button class="text-button" type="button" data-page="mistakes">去看看<svg class="icon" aria-hidden="true"><use href="#i-right"/></svg></button></li><li><span class="plan-icon" aria-hidden="true"><svg class="icon"><use href="#i-cards"/></svg></span><div class="plan-copy"><strong>复习数学记忆卡片</strong><p>3 张基础知识示例卡</p></div><button class="text-button" type="button" data-page="cards">去复习<svg class="icon" aria-hidden="true"><use href="#i-right"/></svg></button></li><li><span class="plan-icon" aria-hidden="true"><svg class="icon"><use href="#i-chat"/></svg></span><div class="plan-copy"><strong>带着问题，继续探索</strong><p>把还没想明白的地方写下来</p></div><button class="text-button" type="button" data-page="chat">去提问<svg class="icon" aria-hidden="true"><use href="#i-right"/></svg></button></li></ul>
+        <ul class="plan-list"><li><span class="plan-icon" aria-hidden="true"><svg class="icon"><use href="#i-book"/></svg></span><div class="plan-copy"><strong>理解一元二次方程</strong><p>从错题中重新梳理解题思路</p></div><button class="text-button" type="button" data-page="mistakes">去看看<svg class="icon" aria-hidden="true"><use href="#i-right"/></svg></button></li><li><span class="plan-icon" aria-hidden="true"><svg class="icon"><use href="#i-cards"/></svg></span><div class="plan-copy"><strong>复习数学知识卡片</strong><p>3 张基础知识示例卡</p></div><button class="text-button" type="button" data-page="cards">去复习<svg class="icon" aria-hidden="true"><use href="#i-right"/></svg></button></li><li><span class="plan-icon" aria-hidden="true"><svg class="icon"><use href="#i-chat"/></svg></span><div class="plan-copy"><strong>带着问题，继续探索</strong><p>把还没想明白的地方写下来</p></div><button class="text-button" type="button" data-page="chat">去提问<svg class="icon" aria-hidden="true"><use href="#i-right"/></svg></button></li></ul>
         <p class="profile-note">“学习不是填满容器，<br>而是让思考发生。”</p>
       </div></section>
       <section class="panel" id="panel-profile" aria-label="我的学习空间演示" hidden><div class="content-panel profile-content">
         <div class="profile-view" id="profile-home">
-          <div class="section-top"><div><div class="eyebrow">YOUR OWN ATHENAEUM</div><h2>一方求知之所。</h2><p>把走过的思路，留给下一次探索。</p></div><svg class="olive-branch" aria-hidden="true"><use href="#i-olive"/></svg></div>
-          <div class="profile-hero"><span class="avatar guest-avatar" id="profile-avatar" aria-hidden="true">DEMO</span><div class="profile-identity"><h3 id="profile-name">以好奇心为名。</h3><p id="profile-identity-note">访客体验 · 无需登录即可试用</p></div><button type="button" class="primary-button profile-account-action" id="profile-auth-action">登录 / 注册</button></div>
-          <p class="profile-disclaimer" id="profile-demo-note">先体验，再决定。这里的历史与收藏均为演示样例。</p>
+          <div class="profile-kicker"><span class="eyebrow">MY ATHENAEUM</span><svg class="olive-branch" aria-hidden="true"><use href="#i-olive"/></svg></div>
+          <div class="profile-hero"><button type="button" class="avatar guest-avatar" id="profile-avatar" aria-label="登录或编辑个人资料">DEMO</button><div class="profile-identity"><h3 id="profile-name">我的学习空间</h3><p id="profile-identity-note">访客体验 · 随时开始学习</p></div><button type="button" class="primary-button profile-account-action" id="profile-auth-action">登录 / 注册</button></div>
+          <p class="profile-disclaimer" id="profile-demo-note">离线体验 · 历史与收藏含演示样例</p>
+          <button class="member-card" id="member-card" type="button" data-profile-view="membership"><span class="member-card-top"><strong>我的会员</strong><span class="member-badge">权益预览</span></span><span class="member-card-title">让每一次理解，更进一步。</span><span class="member-card-bottom"><span>深度讲解 · 专题练习 · 学习整理</span><span class="member-card-action">查看权益 <span aria-hidden="true">›</span></span></span></button>
+          <div class="profile-shortcuts" aria-label="常用学习功能">
+            <button type="button" data-profile-view="history"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg><strong>历史记录</strong><small><span id="history-count">3</span> 段思考</small></button>
+            <button type="button" data-profile-view="saved"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg><strong>我的收藏</strong><small><span id="saved-count">2</span> 条思路</small></button>
+            <button type="button" data-page="plans"><svg class="icon" aria-hidden="true"><use href="#i-cards"/></svg><strong>学习计划</strong><small>安排今日学习</small></button>
+          </div>
+          <div class="profile-block-head"><h3>继续上次学习</h3><button type="button" class="text-button" data-profile-view="history">全部记录 <span aria-hidden="true">›</span></button></div>
+          <button type="button" class="profile-recent" id="profile-recent"><span class="profile-recent-meta" id="recent-meta">数学 · 今天 10:32</span><strong id="recent-title">一元二次方程，为什么这样分解？</strong><span id="recent-summary">寻找和为 −5、积为 6 的两个数。</span><span class="profile-recent-action">继续学习 <svg class="icon" aria-hidden="true"><use href="#i-right"/></svg></span></button>
+          <div class="profile-block-head"><h3>我的教辅</h3><button class="text-button" type="button" data-profile-view="library">全部教辅 <span aria-hidden="true">›</span></button></div>
+          <div class="book-shelf" id="home-book-shelf" aria-label="我的教辅书架"></div>
+          <p class="book-caption">演示书架 · 添加与阅读仅在本页体验</p>
           <h3 class="profile-group-title">学习足迹</h3>
-          <button class="profile-link" type="button" data-profile-view="history"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg><span class="profile-link-copy"><strong>历史记录</strong><small>回到上次没想完的问题</small></span><span class="profile-link-meta" id="history-count">3</span><svg class="icon profile-chevron" aria-hidden="true"><use href="#i-right"/></svg></button>
-          <button class="profile-link" type="button" data-profile-view="saved"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg><span class="profile-link-copy"><strong>我的收藏</strong><small>留住值得反复理解的思路</small></span><span class="profile-link-meta" id="saved-count">2</span><svg class="icon profile-chevron" aria-hidden="true"><use href="#i-right"/></svg></button>
-          <button class="profile-link" type="button" data-page="plans"><svg class="icon" aria-hidden="true"><use href="#i-cards"/></svg><span class="profile-link-copy"><strong>学习计划</strong><small>今天的方向，由你安排</small></span><svg class="icon profile-chevron" aria-hidden="true"><use href="#i-right"/></svg></button>
-          <h3 class="profile-group-title">按自己的方式</h3>
-          <div class="profile-detail-row"><div>阅读主题<p>纸感书房与夜间自习</p></div><button type="button" class="profile-theme" id="profile-theme"><span id="profile-theme-label">纸感书房</span><svg class="icon" aria-hidden="true"><use href="#i-flip"/></svg></button></div>
-          <button class="profile-link" type="button" data-profile-view="settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg><span class="profile-link-copy"><strong>设置与学习偏好</strong><small>外观、学习阶段与讲解方式</small></span><svg class="icon profile-chevron" aria-hidden="true"><use href="#i-right"/></svg></button>
-          <button class="profile-link" type="button" data-profile-view="privacy"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg><span class="profile-link-copy"><strong>隐私与数据</strong><small>了解数据去向，管理本地演示</small></span><svg class="icon profile-chevron" aria-hidden="true"><use href="#i-right"/></svg></button>
-          <button class="profile-link" type="button" data-profile-view="help"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg><span class="profile-link-copy"><strong>帮助与反馈</strong><small>使用提示，以及你的新想法</small></span><svg class="icon profile-chevron" aria-hidden="true"><use href="#i-right"/></svg></button>
-          <p class="profile-note">在问题中保持好奇，<br>在答案之外，继续思考。</p>
+          <div class="profile-menu">
+            <button class="profile-link" type="button" id="profile-general-settings" data-profile-view="settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg><span class="profile-link-copy"><strong>设置</strong></span><span class="profile-link-hint">外观与学习偏好</span><svg class="icon profile-chevron" aria-hidden="true"><use href="#i-right"/></svg></button>
+            <button class="profile-link" type="button" data-profile-view="privacy"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg><span class="profile-link-copy"><strong>隐私与数据</strong></span><span class="profile-link-hint">导出与重置</span><svg class="icon profile-chevron" aria-hidden="true"><use href="#i-right"/></svg></button>
+            <button class="profile-link" type="button" data-profile-view="help"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg><span class="profile-link-copy"><strong>帮助与反馈</strong></span><svg class="icon profile-chevron" aria-hidden="true"><use href="#i-right"/></svg></button>
+          </div>
         </div>
         <div class="profile-view" id="profile-detail" hidden>
           <button class="profile-back" type="button" id="profile-back"><svg class="icon" aria-hidden="true"><use href="#i-right"/></svg>返回我的</button>
@@ -157,6 +204,11 @@
           <div data-profile-section="auth" hidden>
             <form class="profile-form" id="demo-login-form"><label class="profile-field" for="demo-name">体验名称<input id="demo-name" name="name" maxlength="16" required autocomplete="off" placeholder="例如：知夏"></label><p class="small">这是登录 / 注册后的外观演示。填写一个昵称即可，不需要手机号、验证码或密码；刷新页面后回到访客状态。</p><button class="primary-button" type="submit">进入登录后演示</button></form>
           </div>
+          <div data-profile-section="account" hidden><form class="profile-form" id="account-form"><label class="profile-field" for="account-name">名称<input id="account-name" maxlength="16" required autocomplete="off"></label><label class="profile-field" for="account-stage">学习阶段<select id="account-stage"><option>小学</option><option selected>初中</option><option>高中</option><option>自主学习</option></select></label><p class="small">头像使用名称首字，资料仅保留在本次离线体验中。</p><button class="primary-button" type="submit">保存个人资料</button></form><button class="text-button profile-danger" id="profile-logout" type="button">退出演示</button></div>
+          <div data-profile-section="membership" hidden><div class="membership-intro"><span class="eyebrow">ATHENA · MEMBERSHIP</span><h4>为深入学习，留一份专注。</h4><p>会员权益设计预览，具体权益与方案待产品确认。</p></div><div class="member-benefits"><article><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg><div><h4>深度讲解</h4><p>从思路、步骤到易错点，理解一道题背后的方法。</p></div></article><article><svg class="icon" aria-hidden="true"><use href="#i-cards"/></svg><div><h4>专题练习</h4><p>围绕薄弱知识点，规划循序渐进的练习体验。</p></div></article><article><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg><div><h4>学习整理</h4><p>将重点思路与教辅内容，整理成便于回顾的学习资料。</p></div></article></div><button class="primary-button" id="member-preview" type="button">预览会员状态</button><p class="profile-status" id="member-preview-status" role="status">仅展示会员界面，无价格、支付或真实权益开通。</p></div>
+          <div data-profile-section="library" hidden><div class="profile-block-head"><h3>我的书架</h3><button type="button" class="text-button" data-profile-view="bookadd">添加教辅 ＋</button></div><div class="book-library" id="book-library"></div><p class="book-caption">预置书目为样例，不包含真实教辅全文。</p></div>
+          <div data-profile-section="bookadd" hidden><form class="profile-form" id="book-add-form"><label class="profile-field" for="book-title">教辅名称<input id="book-title" maxlength="40" required placeholder="例如：我的数学复习笔记"></label><label class="profile-field" for="book-subject">学科<select id="book-subject"><option>数学</option><option>英语</option><option>物理</option><option>语文</option><option>其他</option></select></label><p class="small">只添加本地书架卡片，不扫描、上传或下载文件；刷新后重置。</p><button type="submit" class="primary-button">添加到书架</button></form></div>
+          <div data-profile-section="book" hidden><div class="book-reading"><span class="subject-label" id="book-detail-subject"></span><h4 id="book-detail-name"></h4><p>内容预览 · 示例学习提纲</p><ol><li>梳理本节核心概念</li><li>对照例题，记录解题思路</li><li>整理易错点，安排下一次复习</li></ol><p class="small">这是通用阅读占位内容，未收录该教辅原文。</p></div><button type="button" class="text-button" data-profile-view="library">返回我的书架</button></div>
           <div data-profile-section="history" hidden><label class="history-search-label" for="history-search">搜索标题与内容<input class="history-search" id="history-search" type="search" placeholder="例如：数学、方程"></label><div id="history-list"></div></div>
           <div data-profile-section="saved" hidden><div id="saved-list"></div></div>
           <div data-profile-section="settings" hidden>
@@ -165,10 +217,10 @@
             <div class="profile-detail-row"><div>减少动态效果<p>关闭本页过渡动画，专注阅读</p></div><button class="profile-switch" type="button" id="profile-motion" aria-pressed="false">已关闭</button></div>
           </div>
           <div data-profile-section="privacy" hidden>
-            <div class="profile-detail-row"><div>数据范围<p>没有联网请求。昵称、收藏和偏好仅保留到页面刷新；主题选择保存在此浏览器。</p></div></div>
-            <div class="profile-detail-row"><div>导出本次演示<p>下载样例历史、收藏与当前偏好的 JSON 文件。</p></div><button class="text-button" type="button" id="profile-export">导出 JSON</button></div>
+            <div class="profile-detail-row"><div>数据范围<p>没有联网请求。昵称、本次提问、收藏和偏好仅保留到页面刷新；主题选择保存在此浏览器。</p></div></div>
+            <div class="profile-detail-row"><div>导出本次演示<p>下载样例与本次提问、收藏和当前偏好的 JSON 文件。</p></div><button class="text-button" type="button" id="profile-export">导出 JSON</button></div>
             <div class="profile-detail-row"><div>重置演示数据<p>恢复访客、样例收藏和默认偏好，同时清除主题选择。</p></div><button class="text-button profile-danger" type="button" id="profile-reset">重置</button></div>
-            <div class="reset-confirm" id="profile-reset-confirm" hidden><p>重置后，本次昵称、收藏变化和反馈草稿会清除，历史恢复为演示样例。</p><div class="profile-actions"><button type="button" id="profile-reset-cancel">保留当前体验</button><button type="button" class="profile-danger" id="profile-reset-confirm-button">确认重置演示</button></div></div><p class="profile-status" id="privacy-status" role="status"></p>
+            <div class="reset-confirm" id="profile-reset-confirm" hidden><p>重置后，本次昵称、新提问、收藏变化和反馈草稿会清除，历史恢复为演示样例。</p><div class="profile-actions"><button type="button" id="profile-reset-cancel">保留当前体验</button><button type="button" class="profile-danger" id="profile-reset-confirm-button">确认重置演示</button></div></div><p class="profile-status" id="privacy-status" role="status"></p>
           </div>
           <div data-profile-section="help" hidden>
             <details class="profile-faq"><summary>访客和登录后的演示有什么区别？</summary><p>访客可浏览全部样例。模拟登录后，DEMO 标识替换为昵称头像与名称，侧栏身份同步更新。此处没有真实账号认证或跨设备同步。</p></details>
@@ -179,7 +231,7 @@
         </div>
       </div></section>
     </div>
-    <nav class="bottom-nav" aria-label="移动端主要导航"><button type="button" data-page="chat" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>聊天</button><button type="button" data-page="mistakes"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg>错题本</button><button type="button" data-page="cards"><svg class="icon" aria-hidden="true"><use href="#i-cards"/></svg>卡片</button><button type="button" data-page="profile"><svg class="icon" aria-hidden="true"><use href="#i-user"/></svg>我的</button></nav>
+    <nav class="bottom-nav" aria-label="移动端主要导航"><button type="button" data-page="chat" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg>聊天</button><button type="button" data-page="mistakes"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg>错题本</button><button type="button" data-page="cards"><svg class="icon" aria-hidden="true"><use href="#i-cards"/></svg>知识卡片</button><button type="button" data-page="profile"><svg class="icon" aria-hidden="true"><use href="#i-user"/></svg>我的</button></nav>
   </main>
 </div>
 </div>
@@ -190,12 +242,11 @@
   'use strict';
   const $ = selector => document.querySelector(selector);
   const $$ = selector => Array.from(document.querySelectorAll(selector));
-  const stage = $('#stage');
   const input = $('#chat-input');
   let activePage = 'chat';
   let toastTimer;
   let selectedTool = '';
-  const titles = {chat:['对话','数学 · 一元二次方程'],mistakes:['错题本','从未解，到理解'],cards:['记忆卡片','温故知新'],plans:['学习计划','循序而进'],profile:['我的','我的学习空间']};
+  const titles = {modulehistory:['历史记录','本地演示'],chat:['对话','数学 · 一元二次方程'],mistakes:['错题本','从未解，到理解'],cards:['知识卡片','温故知新'],plans:['学习计划','循序而进'],profile:['我的','我的学习空间']};
   function toast(message) {
     const box = $('#toast');
     box.textContent = message;
@@ -206,22 +257,20 @@
   function setPage(name) {
     if (!titles[name]) return;
     activePage = name;
-    if(name === 'profile') showProfileView('home',false);
+
     $$('.panels > .panel').forEach(panel => {panel.hidden = panel.id !== 'panel-' + name;});
     $$('[data-page]').forEach(button => {
-      if (button.dataset.page === name) button.setAttribute('aria-current', 'page');
+      if (button.dataset.page === (name==='modulehistory'?moduleHistorySource:name)) button.setAttribute('aria-current', 'page');
       else button.removeAttribute('aria-current');
     });
     $('#page-title').textContent = titles[name][0];
     $('#page-context').textContent = titles[name][1];
     $('.mobile-new').hidden = name !== 'chat';
+    $('#module-history-open').hidden = !['chat','mistakes','cards'].includes(name);
+    if(name === 'profile') showProfileView(profileView,false);
   }
   $$('[data-page]').forEach(button => button.addEventListener('click', () => setPage(button.dataset.page)));
-  $$('[data-device]').forEach(button => button.addEventListener('click', () => {
-    const phone = button.dataset.device === 'phone';
-    stage.classList.toggle('phone-mode', phone);
-    $$('[data-device]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
-  }));
+
   let themePreference = 'light';
   const systemTheme = matchMedia('(prefers-color-scheme: dark)');
   function applyTheme() {
@@ -231,7 +280,6 @@
     toggle.setAttribute('aria-pressed', String(dark));
     toggle.querySelector('span').textContent = dark ? '纸感书房' : '夜间自习';
     toggle.querySelector('use').setAttribute('href', dark ? '#i-sun' : '#i-moon');
-    $('#profile-theme-label').textContent = themePreference === 'system' ? '跟随系统' : dark ? '夜间自习' : '纸感书房';
     $$('[data-profile-theme]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.profileTheme === themePreference)));
   }
   function chooseTheme(theme) {
@@ -241,7 +289,6 @@
   }
   function toggleTheme() {chooseTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');}
   $('#theme-toggle').addEventListener('click',toggleTheme);
-  $('#profile-theme').addEventListener('click',toggleTheme);
   $$('[data-profile-theme]').forEach(button=>button.addEventListener('click',()=>chooseTheme(button.dataset.profileTheme)));
   systemTheme.addEventListener('change',()=>{if(themePreference === 'system')applyTheme();});
   try {const stored=localStorage.getItem('eduagent-design-theme');if(['light','dark','system'].includes(stored))themePreference=stored;} catch (_) {}
@@ -280,7 +327,7 @@
     const scroll = $('#conversation-scroll');
     scroll.scrollTo({top:scroll.scrollHeight,behavior:'auto'});
   }
-  function addPreviewMessage(question, reply) {
+  function addPreviewMessage(question, reply, record = null) {
     const wrap = document.createElement('div');
     wrap.className = 'demo-exchange';
     const user = document.createElement('div');
@@ -297,7 +344,9 @@
     label.textContent = '本地示例回应';
     const body = document.createElement('p');
     body.textContent = reply;
-    answer.append(label,body);wrap.append(user,answer);
+    answer.append(label,body);
+    if(record){const save=document.createElement('button');save.type='button';save.className='profile-empty-action';save.dataset.chatSave=record.id;save.textContent=savedRecords.has(record.id)?'取消收藏':'收藏思路';save.setAttribute('aria-pressed',String(savedRecords.has(record.id)));save.addEventListener('click',()=>{if(savedRecords.has(record.id))savedRecords.delete(record.id);else savedRecords.add(record.id);save.textContent=savedRecords.has(record.id)?'取消收藏':'收藏思路';save.setAttribute('aria-pressed',String(savedRecords.has(record.id)));renderHistory();});answer.append(save);}
+    wrap.append(user,answer);
     $('#demo-messages').append(wrap);
     scrollToLastMessage();
   }
@@ -305,8 +354,10 @@
     event.preventDefault();
     const question = input.value.trim();
     if (!question) {toast('先写下一个想弄明白的问题。');input.focus();return;}
-    const reply = '这份 HTML 仅演示对话排版与交互，未连接真实模型。你可以继续查看错题本、翻转记忆卡片，或切换阅读主题。';
-    addPreviewMessage(question,reply);
+    const reply = '这份 HTML 仅演示对话排版与交互，未连接真实模型。你可以继续查看错题本、翻转知识卡片，或切换阅读主题。';
+    const record={id:'local-'+(++localRecordId),subject:'本次提问',date:'刚刚',title:question,summary:reply,question,answer:reply};
+    sampleHistory.unshift(record);renderHistory();
+    addPreviewMessage(question,reply,record);
     input.value = '';
     resizeInput();
   });
@@ -359,12 +410,27 @@
   const explanations = {'一元二次方程':'寻找和为 −5、积为 6 的两个数，得到 −2 和 −3。因式分解后可得 x = 2 或 x = 3。','一次函数':'在 y = 2x − 3 中，斜率为 2，所以图像从左向右上升；与 y 轴交于 (0, −3)。','现在完成时':'这句话表示“我从三年前开始住在这里，直到现在仍然住在这里”。结构是 have + 过去分词。','牛顿第二定律':'由 a = F / m 可知，在合力 F 保持不变时，质量 m 越大，加速度 a 越小。'};
   const practices = {'一元二次方程':'试着解方程 x² − 7x + 12 = 0。提示：寻找和为 −7、积为 12 的两个数。','一次函数':'试着判断 y = −3x + 2 的图像变化趋势，以及它与 y 轴的交点。','现在完成时':'试着用现在完成时表达：“她已经在这所学校学习了两年。”','牛顿第二定律':'当合力为 12 N、物体质量为 3 kg 时，加速度是多少？'};
   $$('[data-explain]').forEach(button => button.addEventListener('click', () => {
-    const topic = button.dataset.explain;setPage('chat');addPreviewMessage('请帮我讲解：'+topic,explanations[topic]);
+    const topic = button.dataset.explain;rememberMistake(topic,'查看讲解');setPage('chat');addPreviewMessage('请帮我讲解：'+topic,explanations[topic]);
   }));
   $$('[data-practice]').forEach(button => button.addEventListener('click', () => {
-    const topic = button.dataset.practice;setPage('chat');addPreviewMessage('我想做一道'+topic+'的变式练习。',practices[topic]);
+    const topic = button.dataset.practice;rememberMistake(topic,'变式练习');setPage('chat');addPreviewMessage('我想做一道'+topic+'的变式练习。',practices[topic]);
   }));
   const cards = [{question:'一元二次方程的求根公式是什么？',answer:'x = [−b ± √(b² − 4ac)] / 2a\n其中 a ≠ 0，实数根要求 b² − 4ac ≥ 0。'},{question:'三角形的内角和是多少度？',answer:'在欧氏平面中，三角形的三个内角之和为 180°。'},{question:'一次函数 y = kx + b 中，k 决定了什么？',answer:'k 决定直线的斜率。k > 0 时随 x 增大而增大；k < 0 时随 x 增大而减小。'}];
+  const scopePresets=[
+    {match:/一元二次|二次方程/,title:'数学 · 一元二次方程',cards:[{question:'一元二次方程的一般形式是什么？',answer:'ax² + bx + c = 0，其中 a、b、c 是常数，且 a ≠ 0。'},{question:'方程 x² − 5x + 6 = 0 的两个根是什么？',answer:'(x − 2)(x − 3) = 0，因此 x = 2 或 x = 3。'},{question:'判别式 Δ = b² − 4ac 如何判断实数根？',answer:'Δ > 0：两个不相等的实数根；Δ = 0：两个相等的实数根；Δ < 0：没有实数根。'}]},
+    {match:/现在完成时/,title:'英语 · 现在完成时',cards:[{question:'现在完成时的基本结构是什么？',answer:'主语 + have / has + 过去分词。第三人称单数主语通常使用 has。'},{question:'I have lost my key. 强调了什么？',answer:'强调过去丢钥匙对现在的影响：现在没有钥匙可用。'},{question:'for three years 和 since 2023 在时间表达上有什么区别？',answer:'for 后接一段时间；since 后接起始时间点。现在完成时可用它们表达持续至今的状态。'}]},
+    {match:/牛顿第二|F\s*=\s*ma/i,title:'物理 · 牛顿第二定律',cards:[{question:'牛顿第二定律的表达式是什么？',answer:'F合 = ma。加速度方向与合力方向相同；常用于质量不变的经典力学问题。'},{question:'质量 2 kg 的物体受到 6 N 的合力，加速度多大？',answer:'a = F合 / m = 6 / 2 = 3 m/s²。'},{question:'合力不变时，物体质量增大一倍，加速度如何变化？',answer:'由 a = F合 / m 可知，加速度减半。'}]}
+  ];
+  $$('[data-card-scope]').forEach(button=>button.addEventListener('click',()=>{$('#card-ai-scope').value=button.dataset.cardScope;$('#card-ai-scope').focus();}));
+  $('#card-ai-form').addEventListener('submit',async event=>{
+    event.preventDefault();const input=$('#card-ai-scope'),status=$('#card-ai-status'),button=$('#card-ai-generate');
+    const scope=input.value.trim();status.dataset.error='true';
+    if(!scope){status.textContent='请先填写希望出题的知识范围。';input.focus();return;}
+    const matches=scopePresets.filter(preset=>preset.match.test(scope));
+    if(matches.length!==1){status.textContent='当前离线 demo 请选一个示例范围：一元二次方程、现在完成时或牛顿第二定律。原卡片已保留。';return;}
+    const preset=matches[0];button.disabled=true;button.textContent='准备题卡…';$('#card-ai-form').setAttribute('aria-busy','true');status.dataset.error='false';status.textContent='正在准备所选范围的演示题卡…';
+    try{await new Promise(resolve=>setTimeout(resolve,350));cards.splice(0,cards.length,...preset.cards.map(card=>({...card})));cardIndex=0;ratings=[];$('#card-review').hidden=false;$('#card-complete').hidden=true;$('#card-active-scope').textContent=preset.title;renderCard();activeCardHistoryId='cards-'+(++cardHistorySequence);saveCardHistory();status.textContent='已载入 3 张「'+preset.title+'」预置题卡。离线演示不解析难度等附加要求，正式 AI 出题待接入。';$('#review-card').focus({preventScroll:true});$('#review-card').scrollIntoView({block:'nearest'});}finally{button.disabled=false;button.textContent='生成卡片';$('#card-ai-form').setAttribute('aria-busy','false');}
+  });
   let cardIndex = 0;
   let cardFlipped = false;
   let ratings = [];
@@ -407,6 +473,10 @@
   });
   // Personal-space demo: no credentials, requests or real account state.
   let demoUser = null;
+  let localRecordId = 0;
+  let profileView = 'home';
+  const profileScroll = {};
+  let profileReturnFocus = null;
   const initialSaved = ['quadratic','english'];
   let savedRecords = new Set(initialSaved);
   const sampleHistory = [
@@ -414,9 +484,15 @@
     {id:'english',subject:'英语',date:'昨天 · 19:45',title:'现在完成时：过去与现在的连接',summary:'从 have / has + 过去分词，理解一个动作与现在的联系。',question:'现在完成时应该怎么理解？',answer:'它强调过去的动作与现在有关。例如 I have lived here for three years，表示三年前开始住在这里，现在仍住在这里。'},
     {id:'physics',subject:'物理',date:'11 月 1 日 · 17:20',title:'从日常推车，理解牛顿第二定律',summary:'合力保持不变时，质量越大，加速度越小。',question:'如何通过推车理解 F = ma？',answer:'同样大小的推力作用在空车和满载的车上，空车更容易加速。由 a = F / m 可知，在合力相同的条件下，质量越大，加速度越小。'}
   ];
+  const originalHistory = sampleHistory.map(record=>({...record}));
   const profileViews = {
+    membership:['MEMBERSHIP','我的会员','为深入学习而设计的权益空间。'],
+    library:['MY BOOKS','我的教辅','把常用的学习资料，放在触手可及的地方。'],
+    bookadd:['ADD A BOOK','添加教辅','为自己的书架，添一本常用教辅。'],
+    book:['READING ROOM','教辅预览','从一个知识点，开始今天的复习。'],
+    account:['YOUR PROFILE','个人资料','让这方学习空间，有自己的名字。'],
     auth:['ACCOUNT DEMO','从好奇，开始。','体验登录后的个人空间；这里不会建立真实账号。'],
-    history:['TRACES OF THOUGHT','历史记录','每一个问题，都是下一次理解的起点。以下为演示样例。'],
+    history:['TRACES OF THOUGHT','历史记录','演示样例与本次提问，均可继续学习或收藏。'],
     saved:['KEEP WHAT MATTERS','我的收藏','收藏值得再读的思路。变更仅在本次体验中保留。'],
     settings:['YOUR OWN RHYTHM','设置与学习偏好','让阅读和讲解，更接近你的习惯。'],
     privacy:['YOUR DATA, YOUR CHOICE','隐私与数据','清楚了解本地演示中的每一份数据。'],
@@ -425,10 +501,10 @@
   function renderIdentity() {
     $('#profile-avatar').textContent = demoUser ? Array.from(demoUser.name)[0] : 'DEMO';
     $('#profile-avatar').classList.toggle('guest-avatar',!demoUser);
-    $('#profile-name').textContent = demoUser ? demoUser.name : '以好奇心为名。';
-    $('#profile-identity-note').textContent = demoUser ? '学习者 · 模拟登录状态' : '访客体验 · 无需登录即可试用';
-    $('#profile-demo-note').textContent = demoUser ? '你好，'+demoUser.name+'。头像与名称为本次演示身份，历史与收藏仍是样例。' : '先体验，再决定。这里的历史与收藏均为演示样例。';
-    $('#profile-auth-action').textContent = demoUser ? '退出演示' : '登录 / 注册';
+    $('#profile-name').textContent = demoUser ? demoUser.name : '我的学习空间';
+    $('#profile-identity-note').textContent = demoUser ? (demoUser.stage || '初中')+' · 模拟登录' : '访客体验 · 随时开始学习';
+    $('#profile-demo-note').textContent = demoUser ? '离线身份 · 资料与本次学习记录刷新后重置' : '离线体验 · 历史与收藏含演示样例';
+    $('#profile-auth-action').textContent = demoUser ? '个人资料' : '登录 / 注册';
     $('.profile-nav .avatar').textContent = demoUser ? Array.from(demoUser.name)[0] : '学';
     $('#sidebar-profile-name').textContent = demoUser ? demoUser.name : '我的学习空间';
     $('#sidebar-profile-state').textContent = demoUser ? '模拟登录' : '访客体验';
@@ -436,6 +512,8 @@
   function showProfileView(name, focus = true) {
     const home = name === 'home';
     if (!home && !profileViews[name]) return;
+    if(activePage === 'profile' && !$('#panel-profile').hidden) profileScroll[profileView]=$('#panel-profile').scrollTop;
+    profileView = name;
     $('#profile-home').hidden = !home;
     $('#profile-detail').hidden = home;
     $$('[data-profile-section]').forEach(el => {el.hidden = el.dataset.profileSection !== name;});
@@ -445,21 +523,26 @@
       $('#profile-detail-title').textContent = title;
       $('#profile-detail-description').textContent = description;
       if(name === 'history' || name === 'saved') renderHistory();
+      if(name === 'account' && demoUser){$('#account-name').value=demoUser.name;$('#account-stage').value=demoUser.stage || '初中';}
     }
-    $('#panel-profile').scrollTop = 0;
-    if (focus) (home ? $('#profile-auth-action') : $('#profile-detail-title')).focus({preventScroll:true});
+    $('#panel-profile').scrollTop = profileScroll[name] || 0;
+    if (focus) (home ? (profileReturnFocus && profileReturnFocus.isConnected ? profileReturnFocus : $('#profile-auth-action')) : $('#profile-detail-title')).focus({preventScroll:true});
   }
-  $$('[data-profile-view]').forEach(button => button.addEventListener('click',()=>showProfileView(button.dataset.profileView)));
+  $$('[data-profile-view]').forEach(button => button.addEventListener('click',()=>{if(profileView==='home')profileReturnFocus=button;showProfileView(button.dataset.profileView);}));
   $('#profile-back').addEventListener('click',()=>showProfileView('home'));
-  $('#profile-auth-action').addEventListener('click',()=>{
-    if(demoUser){demoUser=null;$('#demo-login-form').reset();renderIdentity();toast('已回到访客演示。');}
-    else showProfileView('auth');
-  });
+  function openAccount(){profileReturnFocus=$('#profile-auth-action');showProfileView(demoUser?'account':'auth');}
+  $('#profile-auth-action').addEventListener('click',openAccount);
+  $('#profile-avatar').addEventListener('click',openAccount);
+  $('#account-form').addEventListener('submit',event=>{event.preventDefault();const name=$('#account-name').value.trim();if(!name){$('#account-name').setCustomValidity('请填写名称。');$('#account-name').reportValidity();return;}demoUser={name,stage:$('#account-stage').value};$('#learning-stage').value=demoUser.stage;renderIdentity();showProfileView('home');toast('已保存本次演示资料。');});
+  $('#account-name').addEventListener('input',()=>$('#account-name').setCustomValidity(''));
+  $('#profile-logout').addEventListener('click',()=>{demoUser=null;$('#demo-login-form').reset();renderIdentity();showProfileView('home');toast('已回到访客演示。');});
+  function openHistoryRecord(record){setPage('chat');$('#initial-conversation').hidden=true;$('#demo-messages').replaceChildren();addPreviewMessage(record.question,record.answer,record);$('#page-context').textContent=record.subject+' · 学习记录';}
+  $('#profile-recent').addEventListener('click',()=>openHistoryRecord(sampleHistory[0]));
   $('#demo-login-form').addEventListener('submit',event=>{
     event.preventDefault();
     const name=$('#demo-name').value.trim();
     if(!name){$('#demo-name').setCustomValidity('请填写一个体验名称。');$('#demo-name').reportValidity();return;}
-    demoUser={name};renderIdentity();showProfileView('home');toast('已进入模拟登录状态，没有建立真实账号。');
+    demoUser={name,stage:$('#learning-stage').value};renderIdentity();showProfileView('home');toast('已进入模拟登录状态，没有建立真实账号。');
   });
   $('#demo-name').addEventListener('input',()=>$('#demo-name').setCustomValidity(''));
   function renderHistory() {
@@ -467,7 +550,7 @@
     for(const kind of ['history','saved']) {
       const target=$('#'+kind+'-list');target.replaceChildren();
       const rows=sampleHistory.filter(record=>kind === 'saved' ? savedRecords.has(record.id) : (record.title+record.summary+record.subject).toLocaleLowerCase().includes(query));
-      if(!rows.length){const empty=document.createElement('p');empty.className='profile-empty';empty.textContent=kind==='saved'?'还没有收藏。去历史记录，留下一段值得再读的思路。':'没有找到这段思考，试试其他关键词。';target.append(empty);}
+      if(!rows.length){const empty=document.createElement('p');empty.className='profile-empty';empty.textContent=kind==='saved'?'还没有收藏，去寻找值得再读的思路。':'没有找到相关记录，试试其他关键词。';const action=document.createElement('button');action.type='button';action.className='profile-empty-action';action.textContent=kind==='saved'?'查看历史记录':'清空搜索';action.addEventListener('click',()=>{if(kind==='saved')showProfileView('history');else{$('#history-search').value='';renderHistory();$('#history-search').focus();}});target.append(empty,action);}
       rows.forEach(record=>{
         const article=document.createElement('article');article.className='history-entry';article.dataset.record=record.id;
         const top=document.createElement('div');top.className='history-entry-top';
@@ -477,12 +560,14 @@
         const summary=document.createElement('p');summary.textContent=record.summary;
         const actions=document.createElement('div');actions.className='history-actions';
         const open=document.createElement('button');open.type='button';open.textContent='继续这段思考';open.dataset.historyOpen=record.id;
-        open.addEventListener('click',()=>{setPage('chat');$('#initial-conversation').hidden=true;$('#demo-messages').replaceChildren();addPreviewMessage(record.question,record.answer);$('#page-context').textContent=record.subject+' · 历史样例';toast('已打开历史样例，可继续本地提问。');});
+        open.addEventListener('click',()=>openHistoryRecord(record));
         const save=document.createElement('button');save.type='button';save.textContent=savedRecords.has(record.id)?'取消收藏':'收藏思路';save.dataset.historySave=record.id;save.setAttribute('aria-pressed',String(savedRecords.has(record.id)));
         save.addEventListener('click',()=>{const wasSaved=savedRecords.has(record.id);if(wasSaved)savedRecords.delete(record.id);else savedRecords.add(record.id);renderHistory();const replacement=target.querySelector('[data-history-save="'+record.id+'"]');if(replacement)replacement.focus({preventScroll:true});else $('#profile-detail-title').focus({preventScroll:true});toast(wasSaved?'已取消本次演示收藏。':'已加入本次演示收藏。');});
         actions.append(open,save);article.append(top,title,summary,actions);target.append(article);
       });
     }
+    $$('[data-chat-save]').forEach(button=>{const on=savedRecords.has(button.dataset.chatSave);button.textContent=on?'取消收藏':'收藏思路';button.setAttribute('aria-pressed',String(on));});
+    const recent=sampleHistory[0];$('#recent-meta').textContent=recent.subject+' · '+recent.date;$('#recent-title').textContent=recent.title;$('#recent-summary').textContent=recent.summary;
     $('#history-count').textContent=String(sampleHistory.length);$('#saved-count').textContent=String(savedRecords.size);
   }
   $('#history-search').addEventListener('input',renderHistory);
@@ -506,13 +591,59 @@
   $('#profile-reset').addEventListener('click',()=>{$('#profile-reset-confirm').hidden=false;$('#profile-reset-cancel').focus();});
   $('#profile-reset-cancel').addEventListener('click',()=>{$('#profile-reset-confirm').hidden=true;$('#profile-reset').focus();});
   $('#profile-reset-confirm-button').addEventListener('click',()=>{
-    demoUser=null;savedRecords=new Set(initialSaved);$('#demo-login-form').reset();$('#history-search').value='';$('#preferences-form').reset();$('#feedback-form').reset();
+    mistakeHistory.splice(0,mistakeHistory.length,...initialMistakeHistory.map(row=>({...row})));cardHistory.splice(0,cardHistory.length);activeCardHistoryId='cards-initial';cards.splice(0,cards.length,...initialCardSet.map(card=>({...card})));cardIndex=0;ratings=[];$('#card-active-scope').textContent='数学 · 基础巩固';$('#card-review').hidden=false;$('#card-complete').hidden=true;renderCard();saveCardHistory();
+    books.splice(3);renderBooks();$('#book-add-form').reset();memberPreview=false;$('.member-badge').textContent='权益预览';$('#member-preview').textContent='预览会员状态';$('#member-preview').setAttribute('aria-pressed','false');$('#member-preview-status').textContent='仅展示会员界面，无价格、支付或真实权益开通。';
+    $('#demo-messages').replaceChildren();
+    demoUser=null;sampleHistory.splice(0,sampleHistory.length,...originalHistory.map(record=>({...record})));savedRecords=new Set(initialSaved);$('#demo-login-form').reset();$('#history-search').value='';$('#preferences-form').reset();$('#feedback-form').reset();
     $('#preferences-status').textContent='学习偏好仅用于本次页面演示，尚未接入回答生成。';$('#feedback-status').textContent='仅展示本地提交反馈，不会发送或保存到服务器。';
     document.documentElement.dataset.reduceMotion='false';$('#profile-motion').setAttribute('aria-pressed','false');$('#profile-motion').textContent='已关闭';
     chooseTheme('light');try{localStorage.removeItem('eduagent-design-theme');}catch(_){}
     renderIdentity();renderHistory();$('#profile-reset-confirm').hidden=true;$('#privacy-status').textContent='已恢复访客及默认演示数据。';$('#profile-reset').focus();
   });
+
+  const books=[{title:'数学 · 同步精讲',subject:'数学'},{title:'英语 · 语法手册',subject:'英语'},{title:'物理 · 概念笔记',subject:'物理'}];
+  let memberPreview=false;
+  $('#member-preview').addEventListener('click',()=>{memberPreview=!memberPreview;$('#member-preview').textContent=memberPreview?'恢复普通状态':'预览会员状态';$('#member-preview-status').textContent=memberPreview?'会员外观预览中，未开通真实权益。':'仅展示会员界面，无价格、支付或真实权益开通。';$('.member-badge').textContent=memberPreview?'会员体验 · DEMO':'权益预览';$('#member-preview').setAttribute('aria-pressed',String(memberPreview));});
+  function renderBooks(){
+    for(const selector of ['#home-book-shelf','#book-library']){const target=$(selector);target.replaceChildren();
+      books.forEach((book,index)=>{const button=document.createElement('button');button.type='button';button.className='book-tile';button.dataset.bookIndex=index;const cover=document.createElement('span');cover.className='book-cover';cover.dataset.subject=book.subject;const label=document.createElement('small');label.textContent=book.subject+' · 教辅';const title=document.createElement('strong');title.textContent=book.title;const mark=document.createElement('span');mark.textContent='学而有思';mark.className='book-caption';cover.append(label,title,mark);const note=document.createElement('span');note.textContent=index<3?'样例 · 预览提纲':'本次添加 · 预览提纲';button.append(cover,note);button.addEventListener('click',()=>{$('#book-detail-name').textContent=book.title;$('#book-detail-subject').textContent=book.subject;showProfileView('book');});target.append(button);});
+      if(selector==='#home-book-shelf'){const add=document.createElement('button');add.type='button';add.className='book-tile book-add';const cover=document.createElement('span');cover.className='book-cover';const plus=document.createElement('b');plus.textContent='＋';const title=document.createElement('strong');title.textContent='添加教辅';cover.append(plus,title);add.append(cover);add.addEventListener('click',()=>showProfileView('bookadd'));target.append(add);}
+    }
+  }
+  $('#book-add-form').addEventListener('submit',event=>{event.preventDefault();const title=$('#book-title').value.trim();if(!title){$('#book-title').setCustomValidity('请填写教辅名称。');$('#book-title').reportValidity();return;}books.push({title,subject:$('#book-subject').value});renderBooks();$('#book-add-form').reset();showProfileView('library');toast('已添加到本次演示书架。');});
+  $('#book-title').addEventListener('input',()=>$('#book-title').setCustomValidity(''));
+  renderBooks();
+
   renderIdentity();renderHistory();
+
+  let moduleHistorySource='chat';
+  const historyPageScroll={};
+  let cardHistorySequence=0,activeCardHistoryId='cards-initial';
+  const initialCardSet=cards.map(card=>({...card}));
+  const initialMistakeHistory=[{topic:'一元二次方程',subject:'数学',action:'查看讲解',date:'今天 · 样例'},{topic:'现在完成时',subject:'英语',action:'变式练习',date:'昨天 · 样例'}];
+  const mistakeHistory=initialMistakeHistory.map(row=>({...row}));
+  const cardHistory=[];
+  function rememberMistake(topic,action){const element=$$('[data-explain]').find(button=>button.dataset.explain===topic);const subject=element.closest('[data-mistake-subject]').dataset.mistakeSubject;const index=mistakeHistory.findIndex(row=>row.topic===topic);if(index>=0)mistakeHistory.splice(index,1);mistakeHistory.unshift({topic,subject,action,date:'刚刚'});}
+  function saveCardHistory(){const old=cardHistory.findIndex(row=>row.id===activeCardHistoryId);if(old>=0)cardHistory.splice(old,1);cardHistory.unshift({id:activeCardHistoryId,title:$('#card-active-scope').textContent,scope:$('#card-ai-scope').value,cards:cards.map(card=>({...card})),index:cardIndex,ratings:[...ratings],date:activeCardHistoryId==='cards-initial'&&cardIndex===0?'初始样例':'本次复习'});}
+  function renderModuleHistory(){
+    const source=moduleHistorySource;$('#module-history-title').textContent={chat:'聊天历史',mistakes:'错题历史',cards:'知识卡片历史'}[source];$('#module-history-back').textContent='‹ 返回'+{chat:'聊天',mistakes:'错题本',cards:'知识卡片'}[source];
+    const query=$('#module-history-search').value.trim().toLocaleLowerCase(),target=$('#module-history-list');target.replaceChildren();
+    const records=source==='chat'?sampleHistory:source==='mistakes'?mistakeHistory:cardHistory;
+    const rows=records.filter(record=>([record.title,record.topic,record.subject,record.summary].filter(Boolean).join(' ')).toLocaleLowerCase().includes(query));
+    if(!rows.length){const message=document.createElement('p');message.className='module-history-empty';message.textContent=query?'没有找到相关记录，试试其他关键词。':'还没有记录，回到页面开始一次学习。';const back=document.createElement('button');back.type='button';back.className='text-button';back.textContent=query?'清空搜索':'开始学习';back.addEventListener('click',()=>{if(query){$('#module-history-search').value='';renderModuleHistory();$('#module-history-search').focus();}else closeModuleHistory();});target.append(message,back);}
+    rows.forEach(record=>{const item=document.createElement('article');item.className='history-entry';const date=document.createElement('p');date.textContent=record.date;const title=document.createElement('h4');title.textContent=record.title||record.topic;const summary=document.createElement('p');summary.textContent=source==='chat'?record.summary:source==='mistakes'?record.subject+' · '+record.action:record.cards.length+' 张题卡 · 已复习 '+record.index+' 张';const action=document.createElement('button');action.type='button';action.className='text-button';action.textContent=source==='chat'?'继续对话':source==='mistakes'?'查看错题':record.index===record.cards.length?'重新复习':'继续复习';action.addEventListener('click',()=>{
+      if(source==='chat')openHistoryRecord(record);
+      if(source==='mistakes'){setPage('mistakes');const filter=$$('.filter[data-subject]').find(button=>button.dataset.subject===record.subject);filter.click();const element=$$('[data-explain]').find(button=>button.dataset.explain===record.topic);element.closest('article').scrollIntoView({block:'nearest'});element.focus({preventScroll:true});}
+      if(source==='cards'){cards.splice(0,cards.length,...record.cards.map(card=>({...card})));cardIndex=record.index===record.cards.length?0:record.index;ratings=record.index===record.cards.length?[]:[...record.ratings];activeCardHistoryId=record.id;$('#card-ai-scope').value=record.scope;$('#card-active-scope').textContent=record.title;$('#card-review').hidden=false;$('#card-complete').hidden=true;renderCard();setPage('cards');$('#review-card').scrollIntoView({block:'nearest'});$('#review-card').focus({preventScroll:true});}
+    });item.append(date,title,summary,action);target.append(item);});
+  }
+  function closeModuleHistory(){setPage(moduleHistorySource);$('#panel-'+moduleHistorySource).scrollTop=historyPageScroll[moduleHistorySource]||0;$('#module-history-open').focus({preventScroll:true});}
+  $('#module-history-open').addEventListener('click',()=>{moduleHistorySource=activePage;historyPageScroll[activePage]=$('#panel-'+activePage).scrollTop;$('#module-history-search').value='';renderModuleHistory();setPage('modulehistory');$('#panel-modulehistory').scrollTop=0;$('#module-history-search').focus({preventScroll:true});});
+  $('#module-history-back').addEventListener('click',closeModuleHistory);
+  $('#module-history-search').addEventListener('input',renderModuleHistory);
+  $$('[data-rating]').forEach(button=>button.addEventListener('click',saveCardHistory));
+  $('#restart-review').addEventListener('click',saveCardHistory);
+  saveCardHistory();
 
   renderCard();
   setPage(activePage);

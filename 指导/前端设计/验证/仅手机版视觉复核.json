@@ -1,0 +1,15 @@
+{
+  "scope": "athena-design",
+  "iteration": 10,
+  "verdict": "pass",
+  "method": "宽屏截图视觉复核与51项导航布局检查",
+  "fixed_findings": [
+    "移除设备切换；电脑窗口仍只呈现414px以内手机界面。",
+    "手机四项导航及主题切换正常，桌面侧栏不可见。"
+  ],
+  "evidence": [
+    "仅手机版演示-1440.png",
+    "仅手机版演示-390.png"
+  ],
+  "html_sha256": "14bf79e416032f59274afc1ff6a605feb7ddbbbe27cc2985d3811371162be633"
+}
